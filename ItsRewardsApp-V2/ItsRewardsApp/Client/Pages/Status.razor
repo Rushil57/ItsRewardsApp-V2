@@ -1,0 +1,276 @@
+﻿@page "/status"
+@using ItsRewardsApp.Shared.ViewModels
+@using ItsRewardsApp.Shared.Models
+@inject HttpClient Http;
+@inject NavigationManager NavigationManager;
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage;
+@inject Blazored.LocalStorage.ILocalStorageService localStorage;
+@inject IJSRuntime JsRuntime;
+@implements IDisposable
+<header class="header">
+    <a href="/">
+        <img src="images/ecommerce.png" class="cls-header-img" alt="" />
+    </a>
+    <h5 style="color:#1f81b2;margin-right: 40px;display:@header">@headerName</h5>
+    <h5 style="color:#1f81b2;margin-right: 45px;font-size: 20px;display:@headerstore"> @headers </h5>
+
+    <a href="/setting">
+        <span class="setting-ic" style=@displySettings><i class="fa fa-cog"></i></span>
+    </a>
+</header>
+<div class="item-container">
+    <div class="conteiner m-1 p-1">
+        <div class="row">
+            <div class="col">
+                <a href="/ecom-index">
+                    <img src="/images/storeImage.png" class="img-fluid" alt="storeImage" style="height:30px;width:30px;margin:3px;" />
+                    <lable style="color: black;font-size: 16px;">@headers</lable>
+                </a>
+            </div>
+        </div>
+        @if (cartInfo == null || cartInfo.Count == 0)
+        {
+            <div class=" d-flex align-items-center justify-content-center gap-3">
+                <div class="h5 spinner-border text-primary mt-1" style="width: 3rem; height: 3rem;"></div>
+            </div>
+        }
+        else
+        {
+            <div class="row">
+                <div class="col-md-8">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Product</th>
+                                <th scope="col">Quantity</th>
+                                <th scope="col">Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in cartInfo)
+                            {
+                                <tr>
+                                    <td>@item.Name</td>
+                                    @if (isCartIconPressed == true)
+                                    {
+                                        <td><input type="number" min="0" class="form-control" onkeypress="return (event.charCode !=8 && event.charCode ==0 || (event.charCode >= 48 && event.charCode <= 57))" @bind-value="@item.Quantity" @oninput="(EventArgs) => {UpdateQuantity(EventArgs.Value.ToString(),item.UnitPrice,item.Id); }" style="width: 25%;min-width: 55px;"></td>
+                                        <td>@item.TotalPrice</td>
+                                        <td><i class="fa fa-trash" aria-hidden="true" style="font-size: 22px;" @onclick="@(() => RemoveCartQuantity(item.Id,item.Quantity,item.UnitPrice))"></i></td>
+                                    }
+                                    else
+                                    {
+                                        <td>@item.Quantity</td>
+                                        <td>@item.TotalPrice</td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-md-4">
+                    <table class="table" style="margin-top: 40px;">
+                        <thead>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <th scope="row">Sub-Total</th>
+                                <td>@cartInfo[0].Total.ToString("F2")</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Discount</th>
+                                <td>@cartInfo[0].Discounts.ToString("F2")</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Tax</th>
+                                <td>@cartInfo[0].Tax.ToString("F2")</td>
+                            </tr>
+                            <tr>
+                                <th scope="row">Total</th>
+                                <td>@total.ToString("F2")</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col" style="margin-left: 85px;margin-top: 60px;font-weight: bold;">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" @onchange="OnDeliveryOptionChanged" name="deliveryOptions" id="inlineRadioPickUp" value="Pick-Up" checked>
+                        <label class="form-check-label pt-1 pe-5" for="inlineRadioPickUp">Pick-Up</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" @onchange="OnDeliveryOptionChanged" name="deliveryOptions" id="inlineRadioDelivery" value="Delivery">
+                        <label class="form-check-label pt-1" for="inlineRadioDelivery">Delivery</label>
+                    </div>
+                </div>
+            </div>
+            <div class="row" style="display:@showMailingAddressRow">
+                <div class="col" style="margin-left: 85px;margin-top: 10px;font-weight: bold">
+                    <label>Address: @cartInfo[0].Address1</label><br><br>
+                    <label>City: @cartInfo[0].City</label><br><br>
+                    <label>State: @cartInfo[0].State</label><br><br>
+                    <label>Zip: @cartInfo[0].ZipCode</label><br><br>
+                </div>
+            </div>
+            <div class="Checkoutdiv" style="margin-bottom: 1%;">
+                <img src="/images/checkout-icon.png" alt="" style="float: right;margin-right: 34%;height: 35px;display:@HideCheckOut;" @onclick="@(() => GoToCheckOut())" />
+            </div>
+        }
+    </div>
+</div>
+<footer class="footer" style="display:@footer">
+    <p class="cls-footer-common">© 2022 - SUCCESS SYSTEMS, INC. &nbsp;-&nbsp; <a href="/legal/privacy.html" target="_blank">PRIVACY</a> | <a href="/legal/terms.html" target="_blank">TERMS</a></p>
+</footer>
+<footer class="footer menu-items" style="display:@footerSetting">
+    <ul>
+        <li>
+            <a href="/home">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+        </li>
+        <li>
+            <a href="/search">
+                <i class="fas fa-search"></i>
+                <span>Search</span>
+            </a>
+        </li>
+        <li>
+            <a href="/dashboard">
+                <i class="fas fa-tag"></i>
+                <span>Coupons</span>
+            </a>
+        </li>
+    </ul>
+</footer>
+@code {
+    string headers;
+    public string appProfileName = "";
+    private string footer = "none";
+    private string footerSetting = "none";
+    private string header = "block";
+    private string headerstore = "none";
+    public string headerName = "";
+    public string menuIconImage = "";
+    public string HideCheckOut = "none";
+    public string displySettings = "display:block";
+    public string showMailingAddressRow = "none";
+    public decimal total = 0.00M;
+    public bool isCartIconPressed = false;
+    public EventCallback<string> DeliveryOptionChanged { get; set; }
+    public List<StatusViewModel> cartInfo = new();
+    protected StatusViewModel statusViewModel = new();
+    protected override Task OnInitializedAsync()
+    {
+        GetSession();
+        GetCartData();
+        return base.OnInitializedAsync();
+    }
+    private async Task GetSession()
+    {
+        var cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+        headers = await sessionStorage.GetItemAsync<string>("StoreName");
+        if (cellNumber != "" && cellNumber != null)
+        {
+            footerSetting = "block";
+            footer = "none";
+        }
+        else
+        {
+            footer = "block";
+            footerSetting = "none";
+        }
+
+        if (headers != "" && headers != null)
+        {
+            header = "none";
+            headerstore = "block";
+        }
+        else
+        {
+            header = "block";
+            headerstore = "none";
+        }
+        StateHasChanged();
+    }
+    private  Task OnDeliveryOptionChanged(ChangeEventArgs e)
+    {
+        if (e.Value.ToString().ToLower() == "delivery")
+        {
+            showMailingAddressRow = "block";
+        }
+        if (e.Value.ToString().ToLower() == "pick-up")
+        {
+            showMailingAddressRow = "none";
+        }
+        return  DeliveryOptionChanged.InvokeAsync(e.Value.ToString());
+    }
+    protected async Task GetCartData()
+    {
+        var cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+        var storeId = await sessionStorage.GetItemAsync<string>("Store_Id");
+        if ((cellNumber == null || cellNumber == "") || (string.IsNullOrEmpty(storeId)))
+        {
+            await JsRuntime.InvokeAsync<string>("alert", "Cellnumber Or StoreId not Found");
+        }
+        else
+        {
+            cartInfo = await Http.GetFromJsonAsync<List<StatusViewModel>>($"api/Status/{cellNumber},{storeId}");
+            total = cartInfo[0].Total + cartInfo[0].Tax - cartInfo[0].Discounts;
+        }
+        isCartIconPressed = await sessionStorage.GetItemAsync<bool>("CartItemPressed");
+        if (isCartIconPressed)
+        {
+            HideCheckOut = "block";
+        }
+        StateHasChanged();
+
+    }
+    private void UpdateQuantity(string Quantity, decimal unitprice, decimal id)
+    {
+        var QuantityValue = 0;
+        if(!string.IsNullOrEmpty(Quantity))
+        {
+            QuantityValue = int.Parse(Quantity);
+        }
+        var CartQuantity = cartInfo.Where(x => x.Id == id).FirstOrDefault();
+        CartQuantity.Quantity = QuantityValue;
+        CartQuantity.TotalPrice = unitprice * QuantityValue;
+        StateHasChanged();
+        decimal CartSubTotal = 0;
+        foreach(var cartinformation in cartInfo)
+        {
+            CartSubTotal += cartinformation.TotalPrice;
+        }
+        cartInfo[0].Total = CartSubTotal + cartInfo[0].Tax - cartInfo[0].Discounts;
+        total = CartSubTotal;
+        StateHasChanged();
+    }
+    void IDisposable.Dispose()
+    {
+        sessionStorage.SetItemAsync("CartItemPressed", false);
+    }
+    protected async Task RemoveCartQuantity(decimal id, int Quantity, decimal unitprice)
+    {
+        var QuantityValue = 0;
+        var CartQuantity = cartInfo.Where(x => x.Id == id).FirstOrDefault();
+        CartQuantity.Quantity = QuantityValue;
+        CartQuantity.TotalPrice = unitprice * QuantityValue;
+        StateHasChanged();
+
+        decimal CartSubTotal = 0;
+        foreach (var cartinformation in cartInfo)
+        {
+            CartSubTotal += cartinformation.TotalPrice;
+        }
+        cartInfo[0].Total = CartSubTotal;
+        total = CartSubTotal;
+        StateHasChanged();
+    }
+    protected async Task GoToCheckOut()
+    {
+        await sessionStorage.SetItemAsync("TotalPrice", total);
+        NavigationManager.NavigateTo("/checkout");
+    }
+}
+

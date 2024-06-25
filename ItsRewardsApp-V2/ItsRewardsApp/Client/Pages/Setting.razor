@@ -1,0 +1,178 @@
+﻿@page "/setting"
+@using Syncfusion.Blazor.Popups;
+@using Syncfusion.Blazor.Buttons;
+@using ItsRewardsApp.Shared.Models;
+@inject HttpClient Http
+@inject IJSRuntime JsRuntime
+@inject NavigationManager NavigationManager
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage
+@implements IDisposable;
+<header class="header">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <a href="/dashboard">
+                    @*<img src="images/itsRewardsLogo.jpg" class="cls-header-img" alt="" />*@
+                    <img  src=@menuIconImage class="cls-header-img" alt="" />
+                </a>
+                <h1 class="title cls-setting-title">Setting</h1>
+                <a @onclick="@OnClickOpenQrCode">
+                    <span style="display:@QRCss" class="setting-qr"><i class="fa fa-qrcode"></i></span>
+                </a>
+                <a href="/setting">
+                    <span class="setting-ic"><i class="fa fa-cog"></i></span>
+                </a>
+            </div>
+        </div>
+    </div>
+</header>
+<div class="">
+    <div class="setting-container">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <ul>
+                        <li>
+                            <a href="/profile"><i class="fas fa-user"></i>Profile</a>
+                        </li>
+                        <li>
+                            <a href="/Help/ItsRewardsHelp.html" ><i class="fa fa-question-circle"></i>Help</a>
+                        </li>
+                        <li style="display:@showHistoryOption">
+                            <a href="/purchasedetails"><i class="fa fa-history"></i>View History</a>
+                        </li>
+                        <li>
+                            <a href="#" @onclick="@Logout"><i class="fas fa-sign-out-alt"></i>Log Out</a>
+                        </li>
+                        <li>
+                            <a href="#" @onclick="@DeleteAccount"><i class="fa fa-power-off"></i>Delete Account</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer class="footer menu-items">
+        <ul>
+            <li>
+                <a href="/home">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+            </li>
+            <li>
+                <a href="/search">
+                    <i class="fas fa-search"></i>
+                    <span>Search</span>
+                </a>
+            </li>
+            <li>
+                <a href="/dashboard">
+                    <i class="fas fa-tag"></i>
+                    <span>Coupons</span>
+                </a>
+            </li>
+        </ul>
+    </footer>
+    <div id="target">
+        <SfDialog class="cls-qrcode-dialog" ShowCloseIcon="true" @bind-Visible="Visibility" AllowPrerender="true" IsModal="true">
+            <DialogTemplates>
+                <Content> <img src="@QrcodeValue" class="cls-qrcode-content" /> </Content>
+            </DialogTemplates>
+        </SfDialog>
+    </div>
+</div>
+@code {
+    private bool Visibility { get; set; } = false;
+    [Inject]
+    public IJSRuntime JSRuntime { get; set; }
+    private string QrcodeValue = "";
+    private string QRCss = "none";
+    public string appProfileName = "";
+    public string menuIconImage = "";
+    public string showHistoryOption = "none";
+    protected override Task OnInitializedAsync()
+    {
+        GetSession();
+        return base.OnInitializedAsync();
+    }
+    private async Task GetSession()
+    {
+        appProfileName = await sessionStorage.GetItemAsync<string>("appProfileName");
+        if (appProfileName.ToLower() == "e-commerce")
+        {
+            EcommerceApplicationProfile ea = new EcommerceApplicationProfile();
+            menuIconImage = ea.MenuIcon;
+        }
+        if (appProfileName.ToLower() == "its-reward")
+        {
+            ItRewardApplicationProfile ia = new ItRewardApplicationProfile();
+            menuIconImage = ia.MenuIcon;
+        }
+        var cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+        if (cellNumber != "" && cellNumber != null)
+        {
+            QRCss = "block";
+            StateHasChanged();
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/login");
+        }
+        var storeId = await sessionStorage.GetItemAsync<string>("Store_Id");
+        {
+            if (!(string.IsNullOrEmpty(storeId)))
+            {
+                showHistoryOption = "block";
+                StateHasChanged();
+            }
+        }
+    }
+    public async Task OnClickOpenQrCode()
+    {
+        var cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+        if (cellNumber != "" && cellNumber != null)
+        {
+            QrcodeValue = await Http.GetStringAsync($"api/QRCode/" + cellNumber);
+            StateHasChanged();
+            this.Visibility = true;
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/login");
+        }
+    }
+
+    public async Task Logout()
+    {
+        await sessionStorage.SetItemAsync<string>("LoginCellNumber", "");
+        await sessionStorage.SetItemAsync<string>("storeLink", "");
+        await sessionStorage.SetItemAsync<string>("StoreName", "");
+        await sessionStorage.SetItemAsync<int>("StoreID", 0);
+        await sessionStorage.SetItemAsync("forceReload", "");
+        await sessionStorage.SetItemAsync<string>("Store_Id", "");
+        await JsRuntime.InvokeAsync<string>("EraseCookie.EraseCookie");
+        NavigationManager.NavigateTo("/login");
+    }
+
+    public async Task DeleteAccount()
+    {
+        bool confirmed = await JsRuntime.InvokeAsync<bool>("confirm", "Do you want to delete your account?");
+        if (confirmed)
+        {
+            var cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+            await Http.DeleteAsync($"api/Home/" + cellNumber);
+            await sessionStorage.SetItemAsync<string>("LoginCellNumber", "");
+            NavigationManager.NavigateTo("/dashboard");
+            await JSRuntime.InvokeAsync<string>("alert", "Your account is successfully deleted");
+            StateHasChanged();
+        }
+    }
+    void IDisposable.Dispose()
+    {
+        if (appProfileName.ToLower() == "its-reward")
+        {
+            sessionStorage.SetItemAsync<string>("Store_Id", ""); //set promotionId to 0 so that could not conflict between by search by promotionId or Description
+        }
+    }
+}

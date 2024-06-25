@@ -1,0 +1,298 @@
+﻿@page "/purchasedetails"
+@using ItsRewardsApp.Shared.ViewModels
+@using ItsRewardsApp.Shared.Models
+@inject HttpClient Http;
+@inject NavigationManager NavigationManager;
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage;
+@inject IJSRuntime JsRuntime;
+<header class="header">
+    <a href="/">
+        <img src="images/ecommerce.png" class="cls-header-img" alt="" />
+    </a>
+    <h5 style="color:#1f81b2;margin-right: 40px;display:@header">@headerName</h5>
+    <h5 style="color:#1f81b2;margin-right: 45px;font-size: 20px;display:@headerstore"> @headers </h5>
+
+    <a href="/setting">
+        <span class="setting-ic" style=@displySettings><i class="fa fa-cog"></i></span>
+    </a>
+</header>
+<div class="item-container">
+    <div class="conteiner m-1 p-1">
+        <div class="row">
+            <div class="col-md-12">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Order Number</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Date Order</th>
+                            <th scope="col">Total Tax</th>
+                            <th scope="col">Total</th>
+                            <th scope="col">Requirements</th>
+                            <th scope="col">View Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in PurchaseDetailsInfo)
+                        {
+                            <tr>
+                                <td>@item.Id</td>
+                                <td>@item.Status</td>
+                                <td>@item.CreatedDate.ToString("d-M-yyyy")</td>
+                                <td>@item.Tax.ToString("F2")</td>
+                                <td>@item.Total</td>
+                                @if (@item.NeedAgeValidation.ToLower() == "n")
+                                {
+                                    <td>N/A</td>
+                                }
+                                @if (@item.NeedAgeValidation.ToLower() == "y")
+                                {
+                                    <td>User Licence</td>
+                                }
+                                <td><i class="fas fa-file" @onclick="@(()=>OpenStatusModelPopUp())"></i></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+@if (ShowModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" role="dialog" style="top: 65px !important;">
+        <div class="modal-dialog modal-dialog-scrollable" role="document">
+            <div class="modal-content" style="max-height: 90% !important;">
+                <div class="modal-header" style="background-color: #1f81b2;color: white;">
+                    <h5 class="modal-title" id="titleLabel">Status Information</h5>
+                    <button type="button" class="close" @onclick="@Close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="conteiner m-1 p-1">
+                        @if (cartInfo == null || cartInfo.Count == 0)
+                        {
+                            <div class=" d-flex align-items-center justify-content-center gap-3">
+                                <div class="h5 spinner-border text-primary mt-1" style="width: 3rem; height: 3rem;"></div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">Product</th>
+                                                <th scope="col">Quantity</th>
+                                                <th scope="col">Price</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @* <tr>
+                                    <td>Marlboro</td>
+                                    <td>2</td>
+                                    <td>24.00</td>
+                                    </tr>*@
+                                            @foreach (var item in cartInfo)
+                                            {
+                                                <tr>
+                                                    <td>@item.Name</td>
+                                                    <td>@item.Quantity</td>
+                                                    <td>@item.TotalPrice</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="col-md-4">
+                                    <table class="table" style="margin-top: 40px;">
+                                        <thead>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <th scope="row">Sub-Total</th>
+                                                <td>@cartInfo[0].Total</td>
+                                            </tr>
+                                            <tr>
+                                                <th scope="row">Discount</th>
+                                                <td>@cartInfo[0].Discounts.ToString("F2")</td>
+                                            </tr>
+                                            <tr>
+                                                <th scope="row">Tax</th>
+                                                <td>@cartInfo[0].Tax.ToString("F2")</td>
+                                            </tr>
+                                            <tr>
+                                                <th scope="row">Total</th>
+                                                <td>@total.ToString("F2")</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col" style="margin-left: 85px;margin-top: 60px;font-weight: bold;">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" @onchange="OnDeliveryOptionChanged" name="deliveryOptions" id="inlineRadioPickUp" value="Pick-Up" checked>
+                                        <label class="form-check-label pt-1 pe-5" for="inlineRadioPickUp">Pick-Up</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" @onchange="OnDeliveryOptionChanged" name="deliveryOptions" id="inlineRadioDelivery" value="Delivery">
+                                        <label class="form-check-label pt-1" for="inlineRadioDelivery">Delivery</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row" style="display:@showMailingAddressRow">
+                                <div class="col" style="margin-left: 85px;margin-top: 10px;font-weight: bold">
+                                    <label>Address: @cartInfo[0].Address1</label><br><br>
+                                    <label>City: @cartInfo[0].City</label><br><br>
+                                    <label>State: @cartInfo[0].State</label><br><br>
+                                    <label>Zip: @cartInfo[0].ZipCode</label><br><br>
+                                </div>
+                            </div>
+                        }
+
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="@Close">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+<footer class="footer" style="display:@footer">
+    <p class="cls-footer-common">© 2022 - SUCCESS SYSTEMS, INC. &nbsp;-&nbsp; <a href="/legal/privacy.html" target="_blank">PRIVACY</a> | <a href="/legal/terms.html" target="_blank">TERMS</a></p>
+</footer>
+<footer class="footer menu-items" style="display:@footerSetting">
+    <ul>
+        <li>
+            <a href="/home">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+        </li>
+        <li>
+            <a href="/search">
+                <i class="fas fa-search"></i>
+                <span>Search</span>
+            </a>
+        </li>
+        <li>
+            <a href="/dashboard">
+                <i class="fas fa-tag"></i>
+                <span>Coupons</span>
+            </a>
+        </li>
+    </ul>
+</footer>
+@code {
+    //private ModalDialog modalDialog;
+    string headers;
+    public string appProfileName = "";
+    private string footer = "none";
+    private string footerSetting = "none";
+    private string header = "block";
+    private string headerstore = "none";
+    public string headerName = "";
+    public string menuIconImage = "";
+    public string displySettings = "display:block";
+    public List<PreOrder> PurchaseDetailsInfo = new();
+    public bool ShowModal = false;
+    public List<StatusViewModel> cartInfo = new();
+    public decimal total = 0.00M;
+    public EventCallback<string> DeliveryOptionChanged { get; set; }
+    public string showMailingAddressRow = "none";
+    protected override Task OnInitializedAsync()
+    {
+        GetSession();
+        GetPurchaseDetailsData();
+        return base.OnInitializedAsync();
+    }
+    private async Task GetSession()
+    {
+        var cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+        //headers = await sessionStorage.GetItemAsync<string>("StoreName");
+        //myStyle = "display: none";
+        if (cellNumber != "" && cellNumber != null)
+        {
+            //signheader = "none";
+            footerSetting = "block";
+            footer = "none";
+            //myStyle = "display:block";
+        }
+        else
+        {
+            footer = "block";
+            footerSetting = "none";
+        }
+
+        if (headers != "" && headers != null)
+        {
+            header = "none";
+            headerstore = "block";
+            //myStyle = "display:block";
+        }
+        else
+        {
+            header = "block";
+            headerstore = "none";
+        }
+        StateHasChanged();
+    }
+
+    protected async Task GetPurchaseDetailsData()
+    {
+        var cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+        var storeId = await sessionStorage.GetItemAsync<string>("Store_Id");
+        if ((cellNumber == null || cellNumber == "") || (string.IsNullOrEmpty(storeId)))
+        {
+            await JsRuntime.InvokeAsync<string>("alert", "Cellnumber Or StoreId not Found");
+        }
+        else
+        {
+            PurchaseDetailsInfo = await Http.GetFromJsonAsync<List<PreOrder>>($"api/PurchaseDetails/{cellNumber},{storeId}");
+        }
+        StateHasChanged();
+    }
+    public async Task OpenStatusModelPopUp()
+    {
+        GetCartData();
+        ShowModal = true;
+    }
+    protected async Task GetCartData()
+    {
+        var cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+        var storeId = await sessionStorage.GetItemAsync<string>("Store_Id");
+        if ((cellNumber == null || cellNumber == "") || (string.IsNullOrEmpty(storeId)))
+        {
+            await JsRuntime.InvokeAsync<string>("alert", "Cellnumber Or StoreId not Found");
+        }
+        else
+        {
+            cartInfo = await Http.GetFromJsonAsync<List<StatusViewModel>>($"api/Status/{cellNumber},{storeId}");
+            total = cartInfo[0].Total + cartInfo[0].Tax - cartInfo[0].Discounts;
+        }
+        StateHasChanged();
+    }
+    private Task OnDeliveryOptionChanged(ChangeEventArgs e)
+    {
+        if (e.Value.ToString().ToLower() == "delivery")
+        {
+            showMailingAddressRow = "block";
+        }
+        if (e.Value.ToString().ToLower() == "pick-up")
+        {
+            showMailingAddressRow = "none";
+        }
+        return DeliveryOptionChanged.InvokeAsync(e.Value.ToString());
+    }
+    public void Close()
+    {
+        ShowModal = false;
+        StateHasChanged();
+    }
+}
+
+

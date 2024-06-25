@@ -1,0 +1,363 @@
+﻿@page "/ecom-index"
+@using ItsRewardsApp.Shared.Models;
+@using ItsRewardsApp.Shared.ViewModels
+@using Microsoft.AspNetCore.WebUtilities;
+@using Microsoft.Extensions.Primitives;
+@using Newtonsoft.Json;
+@using System.Text
+
+@inject HttpClient Http;
+@inject NavigationManager navManager;
+@inject IJSRuntime JsRuntime
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage;
+@inject NavigationManager navigationManager
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage;
+<style>
+
+
+</style>
+<header class="header">
+<div class="row">
+    <div class="col-4">
+        <a href="/">
+            <img src="images/ecommerce.png" class="cls-header-img" alt="" />
+        </a>
+    </div>
+    <div class="col-4">
+        <h5 style="color:#1f81b2;margin-right: 40px;display:@header">@headerName</h5>
+        <h5 style="color:#1f81b2;font-size: 20px;display:@headerstore"> @headers </h5>
+    </div>
+    <div class="col-4" style="display: flex;flex-direction: row-reverse;">
+        <div>
+            <lable style="color:#1f81b2;">@totalQuantity</lable>
+            <i class="fa fa-shopping-cart" aria-hidden="true" @onclick="()=>ShowStatus()" style="color: #1f81b2;font-size: 20px;padding-top: 33px;padding-right: 5px"></i>
+            <a href="/setting">
+                <span><i class="fa fa-cog" style="font-size: 20px;margin-inline-start: 17px;margin-inline-end: 10px;"></i></span>
+            </a>
+        </div>
+    </div>
+</div>
+</header>
+<div class="container dashboard-div" style="padding-top:15px;">
+    <main class="register-container home-container">
+        <div class="row autocomplete">
+            <div class="col">
+                <form style="display:flex;justify-content:space-evenly;">
+                    <select @onchange="OnDepartmentValueChanged" class="form-select" style="color:#5c5a5a;width:20%;">
+                        <option value="0">-Select Department-</option>
+                        @foreach (var item in DepartmentList)
+                        {
+                            <option value="@item" class="dropdown-item">@item</option>
+                        }
+                    </select>
+                    @*<input type="text" class="form-control" @bind="@desc" @oninput="@((e) => { GetDescriptionggestion(desc=(string)e.Value);})" @onkeypress="@EnterPressed" placeholder="Enter Description here..." style="width:70%;">*@
+                    <input type="text" class="form-control" @bind="@desc" @oninput="@((e) => { GetDescriptionggestion(desc=(string)e.Value);})" @onkeypress="@EnterPressed" placeholder="Enter Description here..." style="width:70%;">
+                    @if (descriptionlist.Count > 0)
+                    {
+                        <ul class="options">
+                            @foreach (var items in descriptionlist)
+                            {
+                                <li class="option" @onclick="()=>SelectDescription(items)">
+                                    <span class="option-text">@items</span>
+                                </li>
+
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <ul class="options" style="display:@displayEmptyDescription">
+                            <li class="disabled option">No results</li>
+                        </ul>
+                    }
+                    <button class="btn btn-primary" type="button" style="width:10%;"><i class="fa fa-search" @onclick="()=>Search()"></i></button>
+                </form>
+            </div>
+        </div><br /><br />
+
+        <div class="promotions-list">
+            <div id="couponsSlide" class="carousel slide" data-ride="carousel" >
+                <div class="carousel-inner">
+                    @if (couponsInfo == null || couponsInfo.Count==0)
+                    {
+                        <div class=" d-flex align-items-center justify-content-center gap-3">
+                            <div class="h5 spinner-border text-primary mt-1" style="width: 3rem; height: 3rem;"></div>
+                        </div>
+                    }
+                    else
+                    {
+                        int k = 0;
+                        for (int i = (couponsInfo.Count); i > 0 ; i-=3)
+                        {
+                            <div class="carousel-item">
+                                <div class="row">
+                                    @for (int j = 0; j < 3; j++)
+                                    {
+                                        if (k >= couponsInfo.Count)
+                                        {
+                                            break;
+                                        }
+                                        var promotionid = couponsInfo[k].PromotionId;
+                                        var storeid = couponsInfo[k].StoreId;
+                                        <div class="col-md-4">
+                                            <a class="promo-link">
+                                                <div class="c-div promo-block" id=@couponsInfo[k].PromotionId style="min-height:313px;display:flex;justify-content:center;align-items: center;" @onclick="(e=>CouponDetail(promotionid,storeid))">@couponsInfo[k].CouponName</div>
+                                            </a>
+                                        </div>
+                                        k++;
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+                <button class="carousel-control-prev" type="button" data-bs-target="#couponsSlide" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Previous</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#couponsSlide" data-bs-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="visually-hidden">Next</span>
+                </button>
+            </div>
+        </div>
+    </main>
+</div>
+<footer class="footer" style="display:@footer">
+    <p class="cls-footer-common">© 2022 - SUCCESS SYSTEMS, INC. &nbsp;-&nbsp; <a href="/legal/privacy.html" target="_blank">PRIVACY</a> | <a href="/legal/terms.html" target="_blank">TERMS</a></p>
+</footer>
+<footer class="footer menu-items" style="display:@footerSetting">
+    <ul>
+        <li>
+            <a href="/home">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+        </li>
+        <li>
+            <a href="/search">
+                <i class="fas fa-search"></i>
+                <span>Search</span>
+            </a>
+        </li>
+        <li>
+            <a href="/ecom-index">
+                <i class="fas fa-tag"></i>
+                <span>Coupons</span>
+            </a>
+        </li>
+    </ul>
+</footer>
+
+@code {
+    string headers;
+    public string appProfileName = "";
+    private string footer = "none";
+    private string footerSetting = "none";
+    private string header = "block";
+    private string headerstore = "none";
+    public string headerName = "";
+    public string menuIconImage = "";
+    public string displySettings = "display:block;margin-right: 10px;";
+    public string displayEmptyDescription = "none";
+    public string departmentValue = "0";
+    public string descriptionValue = "";
+    public EventCallback<string> DepartmentValueChanged { get; set; }
+    public EventCallback<string> DescriptionValueChanged { get; set; }
+    public List<CouponsViewModel> couponsInfo = new();
+    public List<String> DepartmentList = new List<string>();
+    public string desc;
+    public string description = "";
+    public List<StatusViewModel> cartItemsList = new();
+    public int totalQuantity = 0;
+    [Inject]
+    public IJSRuntime JSRuntime { get; set; }
+    List<string> descriptionlist = new List<string>();
+    private IJSObjectReference _jsModule;
+
+    protected override Task OnInitializedAsync()
+    {
+        GetSession();
+        GetStoreNameByStationID();
+        GetCartItemsList();
+        BindDepartmentDropdownData();
+        return base.OnInitializedAsync();
+    }
+    private async Task GetSession()
+    {
+        var cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+        headers = await sessionStorage.GetItemAsync<string>("StoreName");
+        if (cellNumber != "" && cellNumber != null)
+        {
+            footerSetting = "block";
+            footer = "none";
+        }
+        else
+        {
+            footer = "block";
+            footerSetting = "none";
+        }
+
+        if (headers != "" && headers != null)
+        {
+            header = "none";
+            headerstore = "block";
+        }
+        else
+        {
+            header = "block";
+            headerstore = "none";
+        }
+        StateHasChanged();
+    }
+    protected async Task GetCartItemsList()
+    {
+        var storeId = await sessionStorage.GetItemAsync<string>("StoreID");
+        var cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+        if ((cellNumber == null || cellNumber == "") || (string.IsNullOrEmpty(storeId)))
+        {
+            await JsRuntime.InvokeAsync<string>("alert", "Cellnumber Or StoreId not Found");
+        }
+        else
+        {
+            cartItemsList = await Http.GetFromJsonAsync<List<StatusViewModel>>($"api/Status/{cellNumber},{storeId}");
+            foreach (var item in cartItemsList)
+            {
+                totalQuantity += item.Quantity;
+            }
+        }
+        StateHasChanged();
+    }
+    protected async Task GetStoreNameByStationID()
+    {
+        StringValues AltriaAccountNumber;
+        var storeId = await sessionStorage.GetItemAsync<int>("StoreID");
+        var cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+        var uri = navManager.ToAbsoluteUri(navManager.Uri);
+
+        if (storeId == 0 && cellNumber != null && cellNumber != "")
+        {
+            await JsRuntime.InvokeAsync<string>("alert", "Please select store or scan qr code to show coupons");
+            navManager.NavigateTo("/home");
+            return;
+        }
+        else
+        {
+            couponsInfo = await Http.GetFromJsonAsync<List<CouponsViewModel>>($"api/Coupons/{cellNumber},{storeId}");
+            StateHasChanged();
+            _jsModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./scripts/commonScript.js");
+        }
+        appProfileName = await sessionStorage.GetItemAsync<string>("appProfileName");
+        if (appProfileName.ToLower() == "its-reward")
+        {
+           await sessionStorage.SetItemAsync<int>("StoreID", 0);
+        }
+        //await sessionStorage.SetItemAsync<string>("StoreName", "");
+        await sessionStorage.SetItemAsync<int>("Store_Id", storeId); //it can be used in search result to get the data.
+        await _jsModule.InvokeVoidAsync("displayCoupons");
+    }
+    private async Task CouponDetail(int promotionId,string storeId)
+    {
+        if (promotionId != null || promotionId != 0)
+        {
+            //await sessionStorage.SetItemAsync<string>("Store_Id", storeId);
+            await sessionStorage.SetItemAsync<string>("PromotionId", promotionId.ToString());
+            navManager.NavigateTo("/SearchResult");
+        }
+    }
+    protected async Task BindDepartmentDropdownData()
+    {
+        var storeId = await sessionStorage.GetItemAsync<String>("StoreID");
+        if (storeId != null)
+        {
+            DepartmentList = await Http.GetFromJsonAsync<List<String>>($"api/EcomCoupons/{storeId}");
+            StateHasChanged();
+        }
+        else {
+            await JsRuntime.InvokeAsync<string>("alert", "StoreID Not Found..");
+        }
+    }
+    private Task OnDepartmentValueChanged(ChangeEventArgs e)
+    {
+        departmentValue = e.Value.ToString();
+        return DepartmentValueChanged.InvokeAsync(departmentValue);
+    }
+    private Task OnDescriptionValueChanged(ChangeEventArgs e)
+    {
+        descriptionValue = e.Value.ToString();
+        return DescriptionValueChanged.InvokeAsync(descriptionValue);
+    }
+    private async Task Search()
+    {
+        description = desc;
+        if (description == null || description =="")
+        {
+            await JSRuntime.InvokeAsync<string>("alert", "Please Enter Description");
+        }
+        else {
+            await sessionStorage.SetItemAsync<string>("DepartmentName", departmentValue);
+            await sessionStorage.SetItemAsync<string>("Description", description);
+            navManager.NavigateTo("/SearchResult");
+        }
+    }
+    public async Task EnterPressed(KeyboardEventArgs e)
+    {
+        description = desc;
+        if (e.Code == "Enter" || e.Code == "NumpadEnter")
+        {
+            if (description == null || description == "")
+            {
+                await JSRuntime.InvokeAsync<string>("alert", "Please Enter Description");
+            }
+            else
+            {
+                await sessionStorage.SetItemAsync<string>("DepartmentName", departmentValue);
+                await sessionStorage.SetItemAsync<string>("Description", description);
+                navManager.NavigateTo("/SearchResult");
+            }
+        }
+    }
+    private async Task ShowStatus()
+    {
+        await sessionStorage.SetItemAsync<bool>("CartItemPressed", true);
+        navManager.NavigateTo("/status");
+    }
+
+    public async Task GetDescriptionggestion(string description)
+    {
+        var storeId = await sessionStorage.GetItemAsync<String>("Store_Id");
+        if (description.Trim().Length > 2)
+        {
+            try
+            {
+                descriptionlist = await Http.GetFromJsonAsync<List<string>>($"api/DescriptionList/{storeId},{description}");
+                if(descriptionlist.Count == 0)
+                {
+                    displayEmptyDescription = "block";
+                }
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+        else
+        {
+            displayEmptyDescription = "none";
+            descriptionlist.Clear();
+            StateHasChanged();
+        }
+    }
+
+    public async Task SelectDescription(string selectedDescription)
+    {
+        //navManager.NavigateTo("/SearchResult");
+        //desc = selectedDescription;
+        //DescriptionInfo = null;
+        descriptionlist.Clear();
+        await sessionStorage.SetItemAsync<string>("DepartmentName", departmentValue);
+        await sessionStorage.SetItemAsync<string>("Description", selectedDescription);
+        navManager.NavigateTo("/SearchResult");
+    }
+}

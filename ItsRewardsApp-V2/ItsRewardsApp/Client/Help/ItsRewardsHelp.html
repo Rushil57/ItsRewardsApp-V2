@@ -1,0 +1,147 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" name="viewport" content="width=device-width, initial-scale=1">
+<title>ItsRewards Help</title>
+
+	<style>
+		img {
+			width:40%;
+			height: 60%;
+		}
+	.header {
+  background-color: #1f81b2;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  text-align: center;
+  color: #fff;
+		
+}
+
+	.footer {
+  text-align: center;
+  position: fixed;
+  font-size: 10px;
+  bottom: 0;
+  width: 100%;
+  left: 0;
+  right: 0;
+  background-color: #1f81b2;
+  padding: 12px 0;
+  color:#fff;
+
+		
+}
+	
+	/* Style the button that is used to open and close the collapsible content */
+.collapsible {
+
+  background-color: #1f81b2;
+  color: #fff;
+  cursor: pointer;
+  padding: 18px;
+  width: 60%;
+  border: none;
+  text-align: center;
+  outline: none;
+  font-size: 15px;
+	border-radius:10px;
+	box-shadow: -5px 6px 2px 0px rgb(0 0 0 / 40%);
+	align-content:center;
+	
+	
+}
+
+/* Add a background color to the button if it is clicked on (add the .active class with JS), and when you move the mouse over it (hover) */
+.active, .collapsible:hover {
+  background-color: #fff;
+	color: #1f81b2;
+	border: 2px solid #1f81b2;
+}
+
+/* Style the collapsible content. Note: hidden by default */
+.content {
+	
+  padding: 0 px;
+  display: none;
+  overflow: hidden;
+	text-align: center;
+  background-color: #fff;
+	width:60%;
+	border: 2px solid #1f81b2;
+margin: 0 auto;
+	
+}
+		.content2{
+			text-align:center;
+			align-content:center;
+		}
+		}
+		h5{
+			font-size:24px;
+		
+		}
+		a { color: inherit; } 
+	</style>
+</head>
+<header class="header">
+	
+	<h5 >ItsRewards Help</h5>
+	</header>
+<body>
+
+	<h1>Getting Started</h1>
+	<p>
+
+	</p>
+	<div class="content2">
+<button type="button" class="collapsible" align="center">Signing Up1</button>
+<div class="content">
+  <p>Before you can sign in you must register your account with the ItsRewards App</p>
+	<p><img class="AppImage" src="../Downloads/Sign-up-itsrewards.jpg"></p>
+	<p>Register your account using email and cell phone number</p>
+	<p><img class="AppImage" src="../Downloads/ItsRewards-Register.jpeg"></p>
+</div><br ><br >
+<button type="button" class="collapsible">Signing In</button>
+<div class="content">
+  <p>After registering your account you can go to the home screen of ItsRewards and sign in using either your email or phone number that you entered when creating your account</p>
+	<p><img class="AppImage" src="../Downloads/Signin-ItsRewards.jpg"></p>
+</div><br ><br >
+<button type="button" class="collapsible">Navigating The App</button>
+<div class="content">
+  <p class="text">The first step after you log in is to choose which store you want to access discounts for. Some people may belong to multiple loyalty programs for multiple stores, this is where you would be able to narrow down which store you are travelling to.<p>
+	<p><img src="../Downloads/Store-Selection-itsrewards.jpg"></p>
+	<p>After you select the proper store, you can then choose either Coupons or Offers</p>
+	<p><img src="../Downloads/coupon-offer.jpg"></p>
+		<h2>Coupons</h2>
+	<p>Tobacco coupons available to you for that store</p>
+	<p><img src="../Downloads/Coupons.jpg"></p>
+		<h2>Offers</h2>
+	<p>Tobacco specific coupons available to you for that store</p>
+	<p><img src="../Downloads/Offers.jpg"></p>
+</div>
+	</div>
+	</div>
+	
+<script>
+var coll = document.getElementsByClassName("collapsible");
+var i;
+
+for (i = 0; i < coll.length; i++) {
+  coll[i].addEventListener("click", function() {
+    this.classList.toggle("active");
+    var content = this.nextElementSibling;
+    if (content.style.display === "block") {
+      content.style.display = "none";
+    } else {
+      content.style.display = "block";
+    }
+  });
+}
+</script>
+</body>
+	<div class="footer"><p>© 2022 - SUCCESS SYSTEMS, INC.  -  <a href="/legal/privacy.html">Privacy</a> | <a href="/legal/terms.html">Terms</a></p></div>
+</html>

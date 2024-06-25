@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>ItsRewardsApp</title>
+    <base href="/" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800&display=swap"
+          rel="stylesheet" />
+    <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/all.css" rel="stylesheet" />
+
+    <!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">-->
+    <link rel="stylesheet" href="lib/font-awesome/css/all.min.css"/>
+    <!--<link href="css/app.css" rel="stylesheet" />-->
+    <!--<link href="css/style.css" rel="stylesheet" />-->
+    <link href="css/custom-style.css" rel="stylesheet" />
+    <link href="ItsRewardsApp.Client.styles.css" rel="stylesheet" />
+    <link href="_content/Syncfusion.Blazor.Themes/bootstrap5.css" rel="stylesheet" />
+    <link href="_content/Syncfusion.Blazor.Themes/bootstrap5.css" rel="stylesheet" />
+    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+    <link href="css/jquery.mobile-1.4.5.min.css" rel="stylesheet" />
+    <script src="https://secure.networkmerchants.com/token/Collect.js" data-tokenization-key="5mN8N7-jhr55W-N22pxX-uAW2s9" ></script>
+    <!--<script src="//code.jquery.com/jquery-1.11.2.min.js"></script>-->
+
+
+
+</head>
+
+<body>
+    <div id="app">
+        <!--Loading...-->
+        <div class="vh-100 d-flex align-items-center justify-content-center gap-3">
+            <div class="h5 spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
+        </div>
+    </div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="_content/Syncfusion.Blazor.Core/scripts/syncfusion-blazor.min.js" type="text/javascript"></script>
+    <script src="_content/BlazorBarcodeScanner.ZXing.JS/zxingjs.index.min.js"></script>
+    <script src="_content/BlazorBarcodeScanner.ZXing.JS/BlazorBarcodeScanner.js"></script>
+    <script src="scripts/bootstrap.bundle.min.js"></script>
+    <script type="module" src="scripts/commonScript.js"></script>
+    <script src="scripts/googlereCaptcha.js"></script>
+    <!-- reCaptcha rendering script -->
+    <script src="https://www.google.com/recaptcha/api.js"></script>
+    <!--<script src="scripts/jquery.min.js"></script>-->
+    <!--<script src="scripts/jquery.mobile-1.4.5.min.js"></script>-->
+    <!--<script src="scripts/swipeTo.min.js"></script>-->
+    <script>
+        window.WriteCookie = {
+            WriteCookie: function (name, value, days) {
+                var expires;
+                if (days) {
+                    var date = new Date();
+                    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                    expires = "; expires=" + date.toGMTString();
+                }
+                else {
+                    expires = "";
+                }
+                return document.cookie = name + "=" + value + expires + "; path=/";
+            }
+        }
+        window.ReadCookie = {
+            ReadCookie: function (cname) {
+                var name = cname + "=";
+                var decodedCookie = decodeURIComponent(document.cookie);
+                var ca = decodedCookie.split(';');
+                let cookies = "";
+                for (var i = 0; i < ca.length; i++) {
+                    var c = ca[i];
+                    cookies = cookies + ca[i];
+                }
+                return cookies;
+            }
+        }
+        window.EraseCookie = {
+            EraseCookie: function () {
+                document.cookie.split(";").forEach(function (c) { document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); });
+            }
+        }
+        window.getCoords = {
+            getCoords: async () => {
+                const permissionStatus = await navigator?.permissions?.query({ name: 'geolocation' })
+                const hasPermission = permissionStatus?.state // Dynamic value
+                console.log(hasPermission)
+                const pos = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject => {alert(reject.message)});
+                })
+                var loc = "";
+                loc += pos.coords.longitude + ",";
+                loc += pos.coords.latitude;
+                return loc;
+            }
+
+        }
+
+
+
+
+
+
+
+    </script>
+</body>
+
+</html>

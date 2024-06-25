@@ -1,0 +1,282 @@
+﻿@page "/login"
+@using ItsRewardsApp.Shared.ViewModels
+@using ItsRewardsApp.Shared.Models
+@using Newtonsoft.Json
+@inject HttpClient Http
+@inject IJSRuntime JsRuntime
+@inject NavigationManager NavigationManager
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage;
+
+
+<header class="header">
+    <a href="/dashboard">
+        @*<img src="images/itsRewardsLogo.jpg" class="cls-header-img" alt="" />*@
+        <img src=@menuIconImage class="cls-header-img" alt="" />
+    </a>
+    <h5 style="color:#1f81b2;">@headerName</h5>
+</header>
+<div class="container cls-login-header">
+    <main class="form-signin">
+        <div class="text-center">
+            <div class="logo-block">
+                <img class="img-fluid" src=@iconImage alt="" width="300" height="100" />
+                @* @if (imageName == "E-Commerce")
+                {
+                <img class="img-fluid" src="images/ecommerce.png" alt="" width="300" height="100" />
+                }
+                else
+                {
+                <img class="img-fluid" src="images/Its_Reward_PNG.png" alt="" width="300" height="100" />
+                }*@
+            </div>
+            <p hidden="@showErrorMsg" style="color:red;">Invalid Cellphone Number OR Password</p>
+        </div>
+        <EditForm Model="@loginModel" OnValidSubmit="SignIn_Click">
+            <DataAnnotationsValidator></DataAnnotationsValidator>
+            <div class="row g-3  mt-3">
+                <div class="col-sm-12">
+                    <label for="email" class="form-label">Cell Phone<sup style="color:red;">*</sup></label>
+                    <InputText type="text" maxlength="10" autocomplete="off" name="CellPhone" style="padding-left: 43px;" id="CellPhone" placeholder="Please enter your Cell Phone Number" class="form-control" @bind-Value="loginModel.CellPhone" onkeypress="return (event.charCode !=8 && event.charCode ==0 || (event.charCode >= 48 && event.charCode <= 57))"></InputText>
+                    <i class="fa fa-phone" style="position: absolute !important; margin-left: 21px;margin-top: -27px;" aria-hidden="true"></i>
+                    <ValidationMessage For="@(() => loginModel.CellPhone)" />
+                </div>
+                <div class="col-sm-12">
+                    <label for="password" class="form-label">Password<sup style="color:red;">*</sup></label>
+                    <InputText type="@TextType" name="password" style="padding-left: 43px;padding-right: 43px;" placeholder="Please enter your password" class="form-control" @bind-Value="loginModel.Password" autocomplete="new-password"></InputText>
+                    <i class="fa fa-lock" style="position: absolute !important; margin-left: 21px;margin-top: -27px;" aria-hidden="true"></i>
+                    <i class="@passwordClass" id="userPassword" style="position: relative !important; margin-right: 25px;margin-top: -27px; float:right !important;" @onclick="showPassword"></i>
+                    <ValidationMessage For="@(() => loginModel.Password)" />
+                </div>
+
+            </div>
+            <div id="footer" class="row" style="padding-top: 15px">
+                <div class="col-sm-6">
+                    <InputCheckbox @bind-Value="loginModel.RememberMe" class="form-check-input" id="chkLeagal" />&nbsp Remember Me
+                </div>
+                <div class="text-end col-sm-6" style="padding-bottom:10px;">
+                    <a href="/forgotpassword" class="forgot-pass">Forgot your Password?</a>
+                </div>
+            </div>
+
+            <button class="w-100 btn mb-4 btn btn-primary" type="submit" style="background-color:#1f81b2;color:#fff;">Sign In</button>
+            <div class="text-center">Do you want to <a href="/loyaltyUserComponent/add" class="forgot-pass fw-bold">Sign Up?</a></div>
+           
+        </EditForm>
+
+
+    </main>
+    @if (ShowDialog)
+    {
+        <div class="modal fade show d-block" id="VeriyPinModel" tabindex="-1" role="dialog" style="top: 80px !important;">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="titleLabel">Confirm Pin</h5>
+                        <button type="button" class="close" @onclick="@Close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">×</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <EditForm Model="@registerModel">
+                            <InputText type="text" autocomplete="off" name="PinCode" id="PinCode" placeholder="Pin" class="form-control" @bind-Value="registerModel.Pinnumber"></InputText>
+                        </EditForm>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="close" @onclick="@ResendPin" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">Resend Pin</span>
+                        </button>
+                        <button type="button" class="close" @onclick="@PinVarification" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">Verify Button</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+<footer class="footer">
+    <p class="cls-footer-common">© 2022 - SUCCESS SYSTEMS, INC. &nbsp;-&nbsp; <a href="/legal/privacy.html" target="_blank">PRIVACY</a> | <a href="/legal/terms.html" target="_blank">TERMS</a></p>
+</footer>
+
+@code {
+    public LoginViewModel loginModel { get; set; }
+    private StoreDetailsViewModel[]? storeDetails;
+    private bool showErrorMsg { get; set; } = true;
+    public string TextType = "password";
+    public string passwordClass = "fa fa-eye-slash";
+    public string appProfileName = "";
+    public string iconImage = "";
+    public string menuIconImage = "";
+    public bool ShowDialog = false;
+    public string headerName = "";
+    protected LoyaltyUserProfileViewModel registerModel = new();
+    public UserLoyaltyStoreMappings userLoyaltyStore = new();
+    protected override Task OnInitializedAsync()
+    {
+        GetSession();
+        loginModel = new LoginViewModel();
+        return base.OnInitializedAsync();
+    }
+    private async Task GetSession()
+    {
+        appProfileName = await sessionStorage.GetItemAsync<string>("appProfileName");
+        if (appProfileName.ToLower() == "e-commerce")
+        {
+            EcommerceApplicationProfile ea = new EcommerceApplicationProfile();
+            iconImage = ea.Icon;
+            menuIconImage = ea.MenuIcon;
+            headerName = "E-Commerce";
+        }
+        if (appProfileName.ToLower() == "its-reward")
+        {
+            ItRewardApplicationProfile ia = new ItRewardApplicationProfile();
+            iconImage = ia.Icon;
+            menuIconImage = ia.MenuIcon;
+            headerName = ia.Title;
+        }
+        StateHasChanged();
+    }
+
+
+    public object cellPhone { get; set; } = "";
+    public object password { get; set; } = "";
+
+    public async Task SignIn_Click()
+    {
+        var userlocation = await JsRuntime.InvokeAsync<string>("getCoords.getCoords", "");
+        var location = userlocation.Split(',');
+        var longitude = location[0];
+        var latitude = location[1];
+
+        var result = await Http.PostAsJsonAsync<LoginViewModel>("api/Login", loginModel);
+        //var result = await Http.PostAsJsonAsync("api/Login", loginModel);
+        if (result != null)
+        {
+
+            var dataModel = await result.Content.ReadAsStringAsync();
+            var modelData = JsonConvert.DeserializeObject<LoginViewModel>(dataModel);
+            if (modelData.isValid)
+            {
+                //store the credential in cookies if remember me selecetd
+                if (loginModel.RememberMe)
+                {
+                    cellPhone = await JsRuntime.InvokeAsync<string>("WriteCookie.WriteCookie", "cellPhone", loginModel.CellPhone,1 );
+                    password = await JsRuntime.InvokeAsync<string>("WriteCookie.WriteCookie", "password", loginModel.Password,1);
+                }
+                await sessionStorage.SetItemAsync("longitude", longitude);
+                await sessionStorage.SetItemAsync("latitude", latitude);
+                await sessionStorage.SetItemAsync("LoginCellNumber", loginModel.CellPhone);
+                //modelData.isActive.ToString();
+                if (modelData.isActive=='N' || modelData.isActive==' ')
+                {
+                    string number = loginModel.CellPhone;
+                    var profile = await Http.PutAsJsonAsync("api/SetActiveUser?cellphone=" + number.ToString(), number);
+
+                    if (profile.StatusCode.ToString() == "OK")
+                    {
+                        ShowDialog = true;
+                    }
+                }
+                else
+                { 
+                    string storelink = await sessionStorage.GetItemAsync<string>("storeLink");
+                    if (storelink == null || storelink == "")
+                    {
+                        NavigationManager.NavigateTo("/home");
+                    }
+                    else
+                    { 
+                        userLoyaltyStore = await Http.GetFromJsonAsync<UserLoyaltyStoreMappings>($"api/Storelink/{loginModel.CellPhone},{storelink}");
+                        if (userLoyaltyStore.ID == 0)
+                        {
+                            await JsRuntime.InvokeAsync<string>("alert", "incorrect storelink name or '@' is missing in storelink Name");
+                            await sessionStorage.SetItemAsync("storeLink", "");
+                            await sessionStorage.SetItemAsync("LoginCellNumber", "");
+                            await sessionStorage.SetItemAsync("StoreID", 0);
+                        }
+                        else
+                        {
+                            await sessionStorage.SetItemAsync("StoreID", userLoyaltyStore.StoreID);
+                            await sessionStorage.SetItemAsync("storeLink", "");
+                            NavigationManager.NavigateTo("/ecom-index");
+                        }
+                    }
+                }
+                //storeDetails = await Http.GetFromJsonAsync<StoreDetailsViewModel[]>($"api/Home/{loginModel.CellPhone},{longitude}, {latitude}");
+                //if (storeDetails == null || storeDetails.Length == 0)
+                //{
+                //    NavigationManager.NavigateTo("/dashboard");
+                //}
+                //else
+                //{
+
+                //    NavigationManager.NavigateTo("/home");
+                //}
+                // NavigationManager.NavigateTo("/home");
+            }
+            else
+            {
+                showErrorMsg = false;
+                //await JsRuntime.InvokeAsync<string>("alert", "Invalid Cell Phone or Password!");
+            }
+        }
+    }
+
+    public void showPassword() 
+    { 
+        if (this.TextType == "password")
+        {
+            this.TextType = "text";
+            this.passwordClass = "fa fa-eye";
+        }
+        else
+        {
+            this.TextType = "password";
+            this.passwordClass = "fa fa-eye-slash";
+        }
+    }
+    public void Close()
+    {
+        registerModel = new();
+        ShowDialog = false;
+        StateHasChanged();
+    }
+    public async Task PinVarification()
+    {
+        string PropertyName = loginModel.CellPhone;
+        string FieldValue = registerModel.Pinnumber;
+        var firstName = await Http.GetStringAsync($"api/LoyaltyUserProfile/{FieldValue},{PropertyName}");
+        if (firstName != "")
+        {
+            await JsRuntime.InvokeAsync<string>("alert", "Cell Number verified successfully.");
+            string number = loginModel.CellPhone;
+            var profile = await Http.PutAsJsonAsync("api/VerifyActiveUser?cellphone=" + number.ToString(), number);
+            if (profile.StatusCode.ToString() == "OK")
+            {
+                ShowDialog = false;
+                registerModel = new();
+                StateHasChanged();
+                NavigationManager.NavigateTo("/home");
+            }
+            else 
+            { 
+                await JsRuntime.InvokeAsync<string>("alert", "Cell Number not verified successfully.");
+            }
+        }
+        else
+        {
+            await JsRuntime.InvokeAsync<string>("alert", "Please enter correct OTP.");
+        }
+    }
+    public async Task ResendPin()
+    {
+        string number = loginModel.CellPhone;
+        var profile = await Http.PutAsJsonAsync("api/SetActiveUser?cellphone=" + number.ToString(), number);
+        if (profile.StatusCode.ToString() == "OK")
+        {
+            ShowDialog = true;
+        }
+        StateHasChanged();
+    }
+
+}

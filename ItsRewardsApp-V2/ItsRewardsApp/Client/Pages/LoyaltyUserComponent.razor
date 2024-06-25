@@ -1,0 +1,626 @@
+﻿@page "/loyaltyUserComponent/add"
+@using ItsRewardsApp.Shared.Models;
+@using ItsRewardsApp.Shared.ViewModels
+@inject HttpClient Http
+@inject IJSRuntime JsRuntime
+@inject NavigationManager NavigationManager
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage
+@using System.ComponentModel
+<header class="header">
+     <a href="/dashboard">
+        @*<img src="images/itsRewardsLogo.jpg" class="cls-header-img" alt="" />*@
+        <img src=@menuIconImage class="cls-header-img" alt="" />
+    </a>
+    <h5 style="color:#1f81b2;">@headerName</h5>
+</header>
+<div class="container register-section">
+    <main class="register-container">
+        <div class="row">
+            <div class="main-title text-center">
+                <h1>@registerModel.StoreName</h1>
+                @*<img src="images/gasland-logo.png" class="logo" alt="" />*@
+                <h6 class="title">Start Receiving Rewards Today!</h6>
+            </div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-10">
+                <EditForm Model="@registerModel" OnValidSubmit="SaveLoyaltyUser">
+                    <DataAnnotationsValidator />
+                    <div class="mb-3 row">
+                        <label for="fname" class="col-sm-2 col-form-label"><span class="required">*&nbsp;</span>First Name:</label>
+                        <div class="col-sm-10">
+                            <InputText type="text" autocomplete="nope" name="firstname" id="fname" placeholder="First Name" class="form-control" @bind-Value="registerModel.FirstName"></InputText>
+                            <ValidationMessage For="@(() => registerModel.FirstName)" />
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="lname" class="col-sm-2 col-form-label"><span class="required">*&nbsp;</span>Last Name:</label>
+                        <div class="col-sm-10">
+                            <InputText type="text" autocomplete="nope" name="lastname" id="lname" placeholder="Last Name" class="form-control" @bind-Value="registerModel.LastName"></InputText>
+                            <ValidationMessage For="@(() => registerModel.LastName)" />
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="address" class="col-sm-2 col-form-label"><span class="required">*&nbsp;</span>Address:</label>
+                        <div class="col-sm-10">
+                            <InputText type="text" autocomplete="nope" name="address" id="address" placeholder="Address" @onfocusout='@(() => PropertyOnFocus("Address",registerModel.Address1))' class="form-control" @bind-Value="registerModel.Address1"></InputText>
+                            <ValidationMessage For="@(() => registerModel.Address1)" />
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="City" class="col-sm-2 col-form-label">City:</label>
+                        <div class="col-sm-10">
+                            <InputText type="text" autocomplete="nope" name="City" id="City" placeholder="City" class="form-control" @bind-Value="registerModel.City"></InputText>
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="State" class="col-sm-2 col-form-label">State:</label>
+                        <div class="col-sm-10">
+                            <InputSelect class="form-select" aria-label="state" @bind-Value="registerModel.State">
+                                <option value="" selected>Select State</option>
+                                <option value="AL">Alabama</option>
+                                <option value="AK">Alaska</option>
+                                <option value="AZ">Arizona</option>
+                                <option value="AR">Arkansas</option>
+                                <option value="CA">California</option>
+                                <option value="CO">Colorado</option>
+                                <option value="CT">Connecticut</option>
+                                <option value="DE">Delaware</option>
+                                <option value="DC">District of Columbia</option>
+                                <option value="FL">Florida</option>
+                                <option value="GA">Georgia</option>
+                                <option value="HI">Hawaii</option>
+                                <option value="ID">Idaho</option>
+                                <option value="IL">Illinois</option>
+                                <option value="IN">Indiana</option>
+                                <option value="IA">Iowa</option>
+                                <option value="KS">Kansas</option>
+                                <option value="KY">Kentucky</option>
+                                <option value="LA">Louisiana</option>
+                                <option value="ME">Maine</option>
+                                <option value="MD">Maryland</option>
+                                <option value="MA">Massachusetts</option>
+                                <option value="MI">Michigan</option>
+                                <option value="MN">Minnesota</option>
+                                <option value="MS">Mississippi</option>
+                                <option value="MO">Missouri</option>
+                                <option value="MT">Montana</option>
+                                <option value="NE">Nebraska</option>
+                                <option value="NV">Nevada</option>
+                                <option value="NH">New Hampshire</option>
+                                <option value="NJ">New Jersey</option>
+                                <option value="NM">New Mexico</option>
+                                <option value="NY">New York</option>
+                                <option value="NC">North Carolina</option>
+                                <option value="ND">North Dakota</option>
+                                <option value="OH">Ohio</option>
+                                <option value="OK">Oklahoma</option>
+                                <option value="OR">Oregon</option>
+                                <option value="PA">Pennsylvania</option>
+                                <option value="RI">Rhode Island</option>
+                                <option value="SC">South Carolina</option>
+                                <option value="SD">South Dakota</option>
+                                <option value="TN">Tennessee</option>
+                                <option value="TX">Texas</option>
+                                <option value="UT">Utah</option>
+                                <option value="VT">Vermont</option>
+                                <option value="VA">Virginia</option>
+                                <option value="WA">Washington</option>
+                                <option value="WV">West Virginia</option>
+                                <option value="WI">Wisconsin</option>
+                                <option value="WY">Wyoming</option>
+                            </InputSelect>
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="Zip" class="col-sm-2 col-form-label">Zip Code:</label>
+                        <div class="col-sm-10">
+                            <InputText type="text" autocomplete="nope" maxlength="5" name="Zip" id="Zip" placeholder="Zip Code" class="form-control" @bind-Value="registerModel.ZipCode" onkeypress="return (event.charCode !=8 && event.charCode ==0 || (event.charCode >= 48 && event.charCode <= 57))"></InputText>
+                            @* <ValidationMessage For="@(() => registerModel.ZipCode)" />*@
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="Phone" class="col-sm-2 col-form-label"><span class="required">*&nbsp;</span>Cell Number:</label>
+                        <div class="col-sm-10">
+                            <InputText type="text" autocomplete="nope" maxlength="10" name="Phone" @onfocusout='@(() => PropertyOnFocus("Phone",registerModel.CellPhone))' id="Phone" placeholder="Cell Number" class="form-control" @bind-Value="registerModel.CellPhone" onkeypress="return (event.charCode !=8 && event.charCode ==0 || (event.charCode >= 48 && event.charCode <= 57))"></InputText>
+                            <ValidationMessage For="@(() => registerModel.CellPhone)" />
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="Email" class="col-sm-2 col-form-label"><span class="required">*&nbsp;</span>Email Address:</label>
+                        <div class="col-sm-10">
+                            <InputText type="text" autocomplete="nope" name="Email" id="Email" placeholder="Email Address" @onfocusout='@(() => PropertyOnFocus("Email",registerModel.EMail))' class="form-control" @bind-Value="registerModel.EMail"></InputText>
+                            <ValidationMessage For="@(() => registerModel.EMail)" />
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="Birth" class="col-sm-2 col-form-label">Birth MM/DD:</label>
+                        <div class="col-sm-10">
+                            <InputDate id="txtBirthDate" class="form-control" max=@DateTime.Today.ToString("yyyy'-'MM'-'dd") @bind-Value="registerModel.BirthDate"></InputDate>
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="Password" class="col-sm-2 col-form-label"><span class="required">*&nbsp;</span>Password:</label>
+                        <div class="col-sm-10">
+                            <InputText type="password" autocomplete="new-password" name="Password" id="Password" placeholder="Password" class="form-control" @bind-Value="registerModel.Password"></InputText>
+                            <ValidationMessage For="@(() => registerModel.Password)" />
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="ConfirmPassword" class="col-sm-2 col-form-label"><span class="required">*&nbsp;</span>Confirm Password:</label>
+                        <div class="col-sm-10">
+                            <InputText type="password" autocomplete="nope" name="ConfirmPassword" id="ConfirmPassword" placeholder="Confirm Password" class="form-control" @bind-Value="registerModel.ConfirmPassword"></InputText>
+                            <ValidationMessage For="@(() => registerModel.ConfirmPassword)" />
+                        </div>
+                    </div>
+                   @* @if (Islocal == "true")
+                    {
+                        
+                    }else
+                    {
+                       <div class="mb-3 row">
+                            <div id="google_recaptcha"></div>*@
+
+                            @*<button class="btn   btn-primary" @onclick="ShowResponse">Show Response</button>*@
+                     @*  </div>
+                    }*@
+                    <div class="mb row justify-content-center">
+                        <div class="col-8">
+                            <div class="form-check" style="padding-left: 0.5em!important;">
+                                @*<InputCheckbox @bind-Value="registerModel.Leagal" @onchange="(e) => LeagalCheckboxClicked(e)" class="form-check-input" id="chkLeagal" />*@
+                                @*<input type="checkbox" checked="@legalValue" @onchange="(e) => LeagalCheckboxClicked(e)" />*@
+                                <input type="checkbox" checked="@legalChecked" onclick="@checkboxClick" />`
+                                <label class="form-check-label" for="emailpromo"> Terms & Conditions</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <div class="col-md-12">
+                            <div class="d-flex gap-2 justify-content-center">
+                                <button class="btn btn-default" onclick="@ResetData" type="button">Reset</button>
+                                <button class="btn cls-submit-btn" type="submit">Submit</button>
+                            </div>
+                        </div>
+                    </div>
+                </EditForm>
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="text-center">
+                            <p class="fw-bold info">
+                                This information will never be sold to a third party<br />
+                                <span class="required">*</span> = required
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @if (ShowDialog)
+        {
+            <div class="modal fade show d-block" id="VeriyPinModel" tabindex="-1" role="dialog" style="top: 80px !important;">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="titleLabel">Confirm Pin</h5>
+                            <button type="button" class="close" @onclick="@Close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">×</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <EditForm Model="@registerModel">
+                                <InputText type="text" autocomplete="off" name="PinCode" id="PinCode" placeholder="Pin" class="form-control" @bind-Value="registerModel.Pinnumber"></InputText>
+                            </EditForm>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="close" @onclick="@ResendPin" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">Resend Pin</span>
+                            </button>
+                            <button type="button" class="close" @onclick="@PinVarification" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">Verify Button</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (ShowTermsCondition)
+        {
+
+            <div class="modal fade show d-block" id="exampleModal" tabindex="-1" role="dialog">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content" style="margin-top: 90px!important;">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="titleLabel">Terms & Conditions</h5>
+                            <button type="button" class="close" @onclick="@CloseTerms" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">×</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <EditForm Model="@registerModel" OnValidSubmit="ConfirmTermsCondition">
+                                <div class="container body-content">
+                                    <page size="A4">
+
+                                        <h2 style=" text-align:center;">Success Systems Terms of Service</h2>
+
+                                        <p>
+                                            Last modified: May 2, 2022
+                                            <h5>Welcome to Success Systems!</h5>
+                                        <p>Thanks for using our products and services (“Services”). The Services are provided by Success Systems Inc. (“Success Systems”), located at Post Office Box 343, New Canaan, Connecticut, United States.</p>
+                                        <p>By using our Services, you are agreeing to these terms. Please read them carefully.</p>
+                                        <p>Our Services are very diverse, so sometimes additional terms or product requirements (including age requirements) may apply. Additional terms will be available with the relevant Services, and those additional terms become part of your agreement with us if you use those Services.</p>
+                                        </p>    <h3>Using our Services</h3>
+                                        <p>   <p>     You must follow any policies made available to you within the Services.</p>
+                                        <p>Don’t misuse our Services. For example, don’t interfere with our Services or try to access them using a method other than the interface and the instructions that we provide. You may use our Services only as permitted by law, including applicable export and re-export control laws and regulations. We may suspend or stop providing our Services to you if you do not comply with our terms or policies or if we are investigating suspected misconduct.</p>
+                                        <p>Using our Services does not give you ownership of any intellectual property rights in our Services or the content you access. You may not use content from our Services unless you obtain permission from its owner or are otherwise permitted by law. These terms do not grant you the right to use any branding or logos used in our Services. Don’t remove, obscure, or alter any legal notices displayed in or along with our Services</p>
+                                        <p>Our Services display some content that is not created by Success Systems. This content is the sole responsibility of the entity that makes it available. We may review content to determine whether it is illegal or violates our policies, and we may remove or refuse to display content that we reasonably believe violates our policies or the law. But that does not necessarily mean that we review content, so please don’t assume that we do.</p>
+                                        <p>In connection with your use of the Services, we may send you service announcements, administrative messages, and other information. You may opt out of some of those communications by means provided within the Services.</p>
+                                        <p>Some of our Services are available on mobile devices. Do not use such Services in a way that distracts you and prevents you from obeying traffic or safety laws.</p>
+                                        </p>          <br />
+                                        <h3>Your Success Systems Account</h3>
+                                        <p>       You may need a Success Systems Account in order to use some of our Services. You may create your own Success Systems Account, or your Success Systems Account may be assigned to you by an administrator, such as your employer or educational institution. If you are using a Success Systems Account assigned to you by an administrator, different or additional terms may apply and your administrator may be able to access or disable your account.</p>
+                                        <p>
+                                            To protect your Success Systems Account, keep your password confidential. You are responsible for the activity that happens on or through your Success Systems Account. Try not to reuse your
+                                        </p>
+                                        <p>Using our Services does not give you ownership of any intellectual property rights in our Services or the content you access. You may not use content from our Services unless you obtain permission from its owner or are otherwise permitted by law. These terms do not grant you the right to use any branding or logos used in our Services. Don’t remove, obscure, or alter any legal notices displayed in or along with our Services.</p>
+                                        <div class="form-group">
+                                            <input name="checkboxpage1" type="checkbox" id="checkboxpage1" required="required" />
+                                            I have read Success System Service Agreement Page #1
+
+                                        </div>
+                                    </page><page size="A4">
+                                        <br />
+                                        <p>Our Services display some content that is not created by Success Systems. This content is the sole responsibility of the entity that makes it available. We may review content to determine whether it is illegal or violates our policies, and we may remove or refuse to display content that we reasonably believe violates our policies or the law. But that does not necessarily mean that we review content, so please don’t assume that we do.</p>
+
+                                        <p>In connection with your use of the Services, we may send you service announcements, administrative messages, and other information. You may opt out of some of those communications by means provided within the Services.</p>
+
+                                        <p>Some of our Services are available on mobile devices. Do not use such Services in a way that distracts you and prevents you from obeying traffic or safety laws.</p>
+
+                                        <br />
+                                        <h4>Privacy and Copyright Protection</h4>
+
+                                        <p>
+                                            Success Systems’s privacy policies explain how we treat your personal data and protect your privacy when you use our Services. By using our Services, you agree that Success Systems can use such data in accordance with our privacy policies.
+                                            We respond to notices of alleged copyright infringement and terminate accounts of repeat infringers according to the process set out in the U.S. Digital Millennium Copyright Act.
+                                            We provide information to help copyright holders manage their intellectual property online. If you think somebody is violating your copyrights and want to notify us, you can find information about submitting notices and Success Systems’s policy about responding to notices in our Help Center.
+                                        </p>
+
+                                        <h4>About Software in our Services</h4>
+                                        <p>
+                                            When a Service requires or includes downloadable software, this software may update automatically on your device once a new version or feature is available. Some Services may let you adjust your automatic update settings.
+                                            Success Systems gives you a worldwide, non-assignable and non-exclusive license to use the software provided to you by Success Systems as part of the Services. This license is for the sole purpose of enabling you to use and enjoy the benefit of the Services as provided by Success Systems, in the manner permitted by these terms. You may not copy, modify, distribute, sell, or lease any part of our Services or included software, nor may you reverse engineer or attempt to extract the source code of that software, unless laws prohibit those restrictions or you have our written permission.
+                                        </p>
+                                        <p>To protect your Success Systems Account, keep your password confidential. You are responsible for the activity that happens on or through your Success Systems Account. Try not to reuse your Success Systems Account password on third-party applications. If you learn of any unauthorized use of your password or Success Systems Account.</p>
+                                        <h4>Modifying and Terminating our Services</h4>
+                                        <p>
+                                            We are constantly changing and improving our Services. We may add or remove functionalities or features, and we may suspend or stop a Service altogether.
+                                            You can stop using our Services at any time, although we’ll be sorry to see you go. Success Systems may also stop providing Services to you or add or create new limits to our Services at any time.
+                                            We believe that preserving your access to such data is important. If we discontinue a Service, where reasonably possible, we will give you reasonable advance notice.
+                                        </p>
+
+                                        <h4>Our Warranties and Disclaimers</h4>
+                                        <p>
+                                            We provide our Services using a commercially reasonable level of skill and care and we hope that you will enjoy using them. But there are certain things that we don’t promise about our Services.
+                                            OTHER THAN AS EXPRESSLY SET OUT IN THESE TERMS OR ADDITIONAL TERMS, NEITHER SUCCESS SYSTEMS NOR ITS SUPPLIERS OR DISTRIBUTORS MAKE ANY SPECIFIC PROMISES ABOUT THE SERVICES. FOR EXAMPLE, WE DON’T MAKE ANY COMMITMENTS ABOUT THE CONTENT WITHIN THE SERVICES, THE SPECIFIC FUNCTIONS OF THE SERVICES, OR THEIR RELIABILITY, AVAILABILITY, OR ABILITY TO MEET YOUR NEEDS. WE PROVIDE THE SERVICES “AS IS”.
+                                            SOME JURISDICTIONS PROVIDE FOR CERTAIN WARRANTIES, LIKE THE IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. TO THE EXTENT PERMITTED BY LAW, WE EXCLUDE ALL WARRANTIES.
+                                        </p>
+
+                                        <div class="form-group">
+                                            <input name="checkboxpage2" type="checkbox" id="checkboxpage2" required="required" />
+                                            I have read Success System Service Agreement Page #2
+
+                                        </div>
+                                    </page>
+                                    <page size="A4">
+                                        <h4>Your California Privacy Rights</h4>
+                                        <p>
+
+                                            California residents are entitled to the following privacy rights listed below.
+                                        </p>
+                                        <p>The right to know. You have the right to request that we disclose what personal information we collect, use, disclose, and sell. Specifically, you have the right to know:</p>
+                                        <ul style="font-size:15px;">
+                                            <li>The categories of personal information we have collected about you in the last 12 months; </li>
+                                            <li>The specific pieces of personal information we have about you;</li>
+                                            <li>The categories of sources from which your personal information was collected;</li>
+                                            <li>The categories of your personal information that we sold or disclosed for a business purpose in the last 12 months, if any; </li>
+                                            <li>The categories of third parties to whom your personal information was sold or disclosed for a business purpose in the last 12 months, if any; and </li>
+                                            <li>The purpose for collecting, sharing, and selling your personal information.</li>
+                                        </ul><p>
+                                        <p>Within the preceding 12 months, SUCCESS collected the categories of personal information detailed in the “Information You Provide to Us” and the “Information Collected Automatically” sections above. The sources from and purposes for which SUCCESS collects personal information are also described in the same sections and in the section “How does SUCCESS Share or Use the Personal Information it Receives?” SUCCESS has not sold or disclosed your personal information to a third party for a business purpose in the past 12 months and, except as set forth in the sections above, SUCCESS does not further disclose your personal information for business purposes to third parties who are not service providers, nor does SUCCESS sell your personal information.</p>
+                                        <p>The right to deletion. You have the right to request that we delete the personal information that we have collected or maintain about you. Under certain circumstances, we have the right to deny your request, such as if needed to comply with our legal obligations. If we deny your request for deletion, we will inform you of the reason.</p>
+                                        <p>The right to opt out of sale. You have the right to request that we do not sell your personal information. SUCCESS does not sell your personal information.</p>
+                                        <p>The right to equal service. SUCCESS will not discriminate against you in any way if you exercise any of your California privacy rights. Please be aware that exercising your rights may result in you being unable to use or access certain features of our Site.</p>
+                                        <p>To exercise your right to know and right to deletion, contact us using the email address provided in the “Questions and How to Contact Us” section below.  You may exercise your right to know and your right to deletion twice a year free of charge. You may also contact us with questions or concerns concerning our privacy policies and practices using the information in the “Questions and How to Contact Us” section.</p>
+                                        <p>We will take steps to verify your identity before processing your request to know or request for deletion. We will not fulfill your request unless you have provided sufficient information for us to reasonably verify you are the individual about whom we collected personal information. We may request limited personal information from you in order to verify your identity, such as your name, email address, and physical address. We will only use the personal information provided in the verification process to verify your identity or authority to make a request and to track and document request responses, unless you initially provided the information for another purpose. </p><p>
+                                            You may use an authorized agent to submit a request to know or a request to delete. When we verify your agent’s request, we may require the agent to provide proof that you gave the agent signed permission to submit the request. We may also ask you to verify your identity or to directly confirm with us that you provided the agent permission to submit the request.
+                                        </p>
+                                        <p>California Civil Code Section 1798.83 (also known as the “Shine the Light” law) permits individual California residents to request certain information regarding our disclosure of certain categories of personal information to third parties for those third parties’ direct marketing purposes. To make such a request, please contact us using the information in the “Questions and How to Contact Us” section below. This request may be made no more than once per calendar year, and we reserve our right not to respond to requests submitted other than to the email or mailing addresses specified below. Note that we do not currently share personal information with third parties for those third parties’ direct marketing purposes.</p>
+
+                                        </p> <div class="form-group">
+                                            <input id="checkboxpage3" name="checkboxpage3" type="checkbox" required="required" />
+                                            I have read Success System Service Agreement Page #3
+                                        </div>
+                                    </page>
+                                    <page size="A4">
+                                        <h3>Liability for our Services</h3>
+                                        <p>
+                                            WHEN PERMITTED BY LAW, SUCCESS SYSTEMS, AND SUCCESS SYSTEMS’S SUPPLIERS AND DISTRIBUTORS, WILL NOT BE RESPONSIBLE FOR LOST PROFITS, REVENUES, OR DATA, FINANCIAL LOSSES OR INDIRECT, SPECIAL, CONSEQUENTIAL, EXEMPLARY, OR PUNITIVE DAMAGES.
+                                            TO THE EXTENT PERMITTED BY LAW, THE TOTAL LIABILITY OF SUCCESS SYSTEMS, AND ITS SUPPLIERS AND DISTRIBUTORS, FOR ANY CLAIMS UNDER THESE TERMS, INCLUDING FOR ANY IMPLIED WARRANTIES, IS LIMITED TO THE AMOUNT YOU PAID US TO USE THE SERVICES (OR, IF WE CHOOSE, TO SUPPLYING YOU THE SERVICES AGAIN).
+                                            IN ALL CASES, SUCCESS SYSTEMS, AND ITS SUPPLIERS AND DISTRIBUTORS, WILL NOT BE LIABLE FOR ANY LOSS OR DAMAGE THAT IS NOT REASONABLY FORESEEABLE.
+                                        </p>
+
+                                        <h4>Business uses of our Services</h4>
+
+                                        <p>
+                                            If you are using our Services on behalf of a business, that business accepts these terms. It will hold harmless and indemnify Success Systems and its affiliates, officers, agents, and employees from any claim, suit or action arising from or related to the use of the Services or violation of these terms, including any liability or expense arising from claims, losses, damages, suits, judgments, litigation costs and attorneys’ fees.
+                                        </p>
+                                        <p>
+                                            <h4>About these Terms</h4>
+                                        </p>
+
+
+                                        <p>
+                                            We may modify these terms or any additional terms that apply to a Service to, for example, reflect changes to the law or changes to our Services. You should look at the terms regularly. We’ll post notice of modifications to these terms on this page. We’ll post notice of modified additional terms in the applicable Service. Changes will not apply retroactively and will become effective no sooner than fourteen days after they are posted. However, changes addressing new functions for a Service or changes made for legal reasons will be effective immediately. If you do not agree to the modified terms for a Service, you should discontinue your use of that Service.
+                                            We may modify these terms or any additional terms that apply to a Service to, for example, reflect changes to the law or changes to our Services. You should look at the terms regularly. We’ll post notice of modifications to these terms on this page. We’ll post notice of modified additional terms in the applicable Service. Changes will not apply retroactively and will become effective no sooner than fourteen days after they are posted. However, changes addressing new functions for a Service or changes made for legal reasons will be effective immediately. If you do not agree to the modified terms for a Service, you should discontinue your use of that Service.
+                                        </p>
+                                        <p>If there is a conflict between these terms and the additional terms, the additional terms will control for that conflict.</p>
+                                        These terms control the relationship between Success Systems and you. They do not create any third-party beneficiary rights.
+                                        If you do not comply with these terms, and we don’t take action right away, this doesn’t mean that we are giving up any rights that we may have (such as taking action in the future).
+                                        If it turns out that a particular term is not enforceable, this will not affect any other terms.
+                                        <p>
+                                            The laws of Connecticut, U.S.A., excluding Connecticut’s conflict of laws rules, will apply to any disputes arising out of or relating to these terms or the Services. All claims arising out of or relating to these terms or the Services will be litigated exclusively in the federal or state courts of Fairfield County, Connecticut, USA, and you and Success Systems consent to personal jurisdiction in those courts.
+                                        </p>
+                                        <p>For information about how to contact Success Systems, please visit our contact page.</p>
+                                        <div class="form-group">
+                                            <input id="checkboxpage4" name="checkboxpage4" type="checkbox" required="required" />
+                                            I have read Success System Service Agreement Page #4
+                                        </div>
+                                    </page>
+
+                                    <div>
+                                        <div class="form-group">
+                                            @*<input name="ctl00$MainContent$inputname" type="text" id="MainContent_inputname" required="required" class="form-control" />*@
+                                            <InputText type="text" name="UserSignature" id="UserSignature" placeholder="User Signature" class="form-control" @bind-Value="registerModel.UserSignature"></InputText>
+                                            <ValidationMessage For="@(() => registerModel.UserSignature)" />
+                                            I Agree to the terms above and authorize with my signature
+                                        </div>
+                                        <input type="submit" name="buttonSubmit" value="Confirm" id="buttonSubmit" class="btn btn-success btn-lg pull-right" />
+                                    </div>
+                                </div>
+                            </EditForm>
+                        </div>
+                        <div class="modal-footer">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </main>
+</div>
+<footer class="footer">
+    <p class="cls-footer-common">© 2022 - SUCCESS SYSTEMS, INC. &nbsp;-&nbsp; <a href="/legal/privacy.html" target="_blank">PRIVACY</a> | <a href="/legal/terms.html" target="_blank">TERMS</a></p>
+</footer>
+
+@code {
+
+    [Parameter]
+    public int userId { get; set; }
+    protected string Title = "Add";
+    public bool ShowDialog = false;
+    public bool ShowTermsCondition = false;
+    public string CellPhone = "";
+    protected LoyaltyUserProfileViewModel registerModel = new();
+    public bool legalChecked = false;
+   // private string captchaResponse;
+    //public string Islocal;
+    public string appProfileName = "";
+    public string menuIconImage = "";
+    public string headerName = "";
+    //protected override async Task   OnAfterRenderAsync(bool   firstRender)
+    //{
+    //    if (firstRender)
+    //    {
+    //        //original site key 
+    //        await JsRuntime.InvokeAsync<int>("googleRecaptcha",   DotNetObjectReference.Create(this), "google_recaptcha", "6LeePX8hAAAAABeDBb1E08JNMX4ooxpPvi9z0Rlc");
+
+    //        //dummy site key for testing purpose
+    //        // await JsRuntime.InvokeAsync<int>("googleRecaptcha",   DotNetObjectReference.Create(this), "google_recaptcha", "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI");
+
+    //    }
+    //    await base.OnAfterRenderAsync(firstRender);
+    //}
+
+    [JSInvokable,   EditorBrowsable(EditorBrowsableState.Never)]
+    //public void CallbackOnSuccess(string response)
+    //{
+    //    captchaResponse =   response;
+    //}
+
+   // [JSInvokable,   EditorBrowsable(EditorBrowsableState.Never)]
+    //public void CallbackOnExpired(string response)
+    //{
+    //    setInterval(function(){ grecaptcha.reset(); }, 5 * 60 * 1000 ); 
+    //}
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (userId != 0)
+        {
+            Title = "Edit";
+            registerModel = await Http.GetFromJsonAsync<LoyaltyUserProfileViewModel>("api/LoyaltyUserProfile/" + userId);
+        }
+    }
+    protected override Task OnInitializedAsync()
+    {
+        setTitle();
+        registerModel = new LoyaltyUserProfileViewModel();
+        return base.OnInitializedAsync();
+    }
+    public async Task setTitle()
+    {
+       // Islocal = await sessionStorage.GetItemAsync<string>("LocalUrl");
+        var addTitle = await sessionStorage.GetItemAsync<string>("storeName");
+        if(addTitle != "" && addTitle != null)
+        {
+            registerModel.StoreName = await sessionStorage.GetItemAsync<string>("storeName");
+            registerModel.StoreId = await sessionStorage.GetItemAsync<string>("storeId");
+        }
+        else
+        {
+            registerModel.StoreName = "";
+            registerModel.StoreId = "0";
+        }
+        appProfileName = await sessionStorage.GetItemAsync<string>("appProfileName");
+        if (appProfileName.ToLower() == "e-commerce")
+        {
+            EcommerceApplicationProfile ea = new EcommerceApplicationProfile();
+            menuIconImage = ea.MenuIcon;
+            headerName = "E-Commerce";
+        }
+        if (appProfileName.ToLower() == "its-reward")
+        {
+            ItRewardApplicationProfile ia = new ItRewardApplicationProfile();
+            menuIconImage = ia.MenuIcon;
+            headerName = ia.Title;
+        }
+        StateHasChanged();
+    }
+    protected async Task SaveLoyaltyUser()
+    {
+        if (legalChecked == false)
+        {
+            await JsRuntime.InvokeAsync<string>("alert", "please select Terms and Condition and fill Required field.");
+            return;
+        }
+        //if (Islocal == "true")
+        //{
+        //    captchaResponse = "yes";
+        //}
+        //if(captchaResponse == null || captchaResponse == "")
+        //{
+        //    await JsRuntime.InvokeAsync<string>("alert", "please validate recaptcha");
+        //    return;
+        //}
+        if (registerModel.UserProfileID != 0)
+        {
+            await Http.PutAsJsonAsync("api/LoyaltyUserProfile", registerModel);
+            await JsRuntime.InvokeAsync<string>("alert", "Record updated successfully.");
+        }
+        else
+        {
+            CellPhone = registerModel.CellPhone;
+            var result = await Http.PostAsJsonAsync("api/LoyaltyUserProfile", registerModel);
+            if (result.StatusCode.ToString() == "OK")
+            {
+                ShowDialog = true;
+            }
+            StateHasChanged();
+            //await JsRuntime.InvokeAsync<string>("alert", "Record inserted successfully.");
+        }
+        //Cancel();
+    }
+    public async Task ResendPin()
+    { 
+        var result = await Http.PutAsJsonAsync("api/ResendPin", registerModel);
+        if (result.StatusCode.ToString() == "OK")
+        {
+            ShowDialog = true;
+        }
+            StateHasChanged();
+    }
+    public void Cancel()
+    {
+        NavigationManager.NavigateTo("/fetchuserdetails");
+    }
+    public async Task PropertyOnFocus(string PropertyName, string FieldValue)
+    {
+        if (PropertyName.ToLower() == "phone" && FieldValue.Length != 10)
+        {
+            return;
+        }
+        if (FieldValue != "" &&
+            (PropertyName.ToLower() == "email" || PropertyName.ToLower() == "phone"))
+        {
+            var firstName = await Http.GetStringAsync($"api/LoyaltyUserProfile/{FieldValue},{PropertyName}");
+            if (!string.IsNullOrEmpty(firstName))
+            {
+                if (PropertyName.ToLower() == "email")
+                {
+                    registerModel.EMail = string.Empty;
+                }
+
+                if (PropertyName.ToLower() == "phone")
+                {
+                    registerModel.CellPhone = string.Empty;
+                }
+                StateHasChanged();
+                await JsRuntime.InvokeAsync<string>("alert", PropertyName + " already exist. please try again.");
+                return;
+            }
+        }
+    }
+    public void Close()
+    {
+        registerModel = new();
+        ShowDialog = false;
+        StateHasChanged();
+    }
+    public void CloseTerms()
+    {
+        legalChecked = false;
+        ShowTermsCondition = false;
+        //legalValue = false;
+        StateHasChanged();
+    }
+    public async Task PinVarification()
+    {
+        string PropertyName = CellPhone;
+        string FieldValue = registerModel.Pinnumber;
+        var firstName = await Http.GetStringAsync($"api/LoyaltyUserProfile/{FieldValue},{PropertyName}");
+        if (firstName != "")
+        {
+            //await JsRuntime.InvokeAsync<string>("alert", "Cell Number verified successfully.");
+            await sessionStorage.SetItemAsync("LoginCellNumber", CellPhone);
+            CellPhone = "";
+            ShowDialog = false;
+            registerModel = new();
+            StateHasChanged();
+            NavigationManager.NavigateTo("/dashboard");
+        }
+        else
+        {
+            await JsRuntime.InvokeAsync<string>("alert", "Please enter correct OTP.");
+        }
+    }
+    public void ResetData()
+    {
+        registerModel = new();
+    }
+    protected async Task ConfirmTermsCondition()
+    {
+        var result = registerModel.UserSignature;
+        if (result == null)
+        {
+            await JsRuntime.InvokeAsync<string>("alert", "Please enter user signature.");
+            return;
+        }
+        else
+        {
+            ShowTermsCondition = false;
+            StateHasChanged();
+        }
+    }
+
+    public void checkboxClick()
+    {
+        if (legalChecked == true)
+        {
+            legalChecked = false;
+        }
+        else
+        {
+            ShowTermsCondition = true;
+            legalChecked = true;
+        }
+        StateHasChanged();
+    }
+}

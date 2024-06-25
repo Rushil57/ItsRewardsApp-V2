@@ -1,0 +1,261 @@
+﻿@page "/profile"
+@using ItsRewardsApp.Shared.Models;
+@using ItsRewardsApp.Shared.ViewModels
+@inject HttpClient Http
+@inject IJSRuntime JsRuntime
+@inject NavigationManager NavigationManager
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage
+
+<header class="header">
+    <a href="/dashboard">
+        @*<img src="images/itsRewardsLogo.jpg" class="cls-header-img" alt="" />*@
+        <img src=@menuIconImage class="cls-header-img" alt="" />
+    </a>
+    <h5 style="color:#1f81b2;margin-right: 40px;">@headerName</h5>
+    <a href="/setting">
+        <span class="setting-ic"><i class="fa fa-cog"></i></span>
+    </a>
+</header>
+<div class="container register-section">
+    <main class="register-container">
+        <div class="row">
+            <div class="main-title text-center">
+                <h6 class="title">Profile</h6>
+            </div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-10">
+                <EditForm Model="@registerModel" OnValidSubmit="UpdateLoyaltyUser">
+                    <DataAnnotationsValidator />
+                    <div class="mb-3 row">
+                        <label for="fname" class="col-sm-2 col-form-label"><span class="required">*&nbsp;</span>First Name:</label>
+                        <div class="col-sm-10">
+                            <InputText type="text" autocomplete="nope" name="firstname" id="fname" placeholder="First Name" class="form-control" @bind-Value="registerModel.FirstName"></InputText>
+                            <ValidationMessage For="@(() => registerModel.FirstName)" />
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="lname" class="col-sm-2 col-form-label"><span class="required">*&nbsp;</span>Last Name:</label>
+                        <div class="col-sm-10">
+                            <InputText type="text" autocomplete="nope" name="lastname" id="lname" placeholder="Last Name" class="form-control" @bind-Value="registerModel.LastName"></InputText>
+                            <ValidationMessage For="@(() => registerModel.LastName)" />
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="address" class="col-sm-2 col-form-label"><span class="required">*&nbsp;</span>Address:</label>
+                        <div class="col-sm-10">
+                            <InputText type="text" autocomplete="nope" name="address" id="address" placeholder="Address" class="form-control" @bind-Value="registerModel.Address1"></InputText>
+                            <ValidationMessage For="@(() => registerModel.Address1)" />
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="City" class="col-sm-2 col-form-label">City:</label>
+                        <div class="col-sm-10">
+                            <InputText type="text" autocomplete="nope" name="City" id="City" placeholder="City" class="form-control" @bind-Value="registerModel.City"></InputText>
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="State" class="col-sm-2 col-form-label">State:</label>
+                        <div class="col-sm-10">
+                            <InputSelect class="form-select" aria-label="state" @bind-Value="registerModel.State">
+                                <option value="" selected>Select State</option>
+                                <option value="AL">Alabama</option>
+                                <option value="AK">Alaska</option>
+                                <option value="AZ">Arizona</option>
+                                <option value="AR">Arkansas</option>
+                                <option value="CA">California</option>
+                                <option value="CO">Colorado</option>
+                                <option value="CT">Connecticut</option>
+                                <option value="DE">Delaware</option>
+                                <option value="DC">District of Columbia</option>
+                                <option value="FL">Florida</option>
+                                <option value="GA">Georgia</option>
+                                <option value="HI">Hawaii</option>
+                                <option value="ID">Idaho</option>
+                                <option value="IL">Illinois</option>
+                                <option value="IN">Indiana</option>
+                                <option value="IA">Iowa</option>
+                                <option value="KS">Kansas</option>
+                                <option value="KY">Kentucky</option>
+                                <option value="LA">Louisiana</option>
+                                <option value="ME">Maine</option>
+                                <option value="MD">Maryland</option>
+                                <option value="MA">Massachusetts</option>
+                                <option value="MI">Michigan</option>
+                                <option value="MN">Minnesota</option>
+                                <option value="MS">Mississippi</option>
+                                <option value="MO">Missouri</option>
+                                <option value="MT">Montana</option>
+                                <option value="NE">Nebraska</option>
+                                <option value="NV">Nevada</option>
+                                <option value="NH">New Hampshire</option>
+                                <option value="NJ">New Jersey</option>
+                                <option value="NM">New Mexico</option>
+                                <option value="NY">New York</option>
+                                <option value="NC">North Carolina</option>
+                                <option value="ND">North Dakota</option>
+                                <option value="OH">Ohio</option>
+                                <option value="OK">Oklahoma</option>
+                                <option value="OR">Oregon</option>
+                                <option value="PA">Pennsylvania</option>
+                                <option value="RI">Rhode Island</option>
+                                <option value="SC">South Carolina</option>
+                                <option value="SD">South Dakota</option>
+                                <option value="TN">Tennessee</option>
+                                <option value="TX">Texas</option>
+                                <option value="UT">Utah</option>
+                                <option value="VT">Vermont</option>
+                                <option value="VA">Virginia</option>
+                                <option value="WA">Washington</option>
+                                <option value="WV">West Virginia</option>
+                                <option value="WI">Wisconsin</option>
+                                <option value="WY">Wyoming</option>
+                            </InputSelect>
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="Zip" class="col-sm-2 col-form-label">Zip Code:</label>
+                        <div class="col-sm-10">
+                            <InputText type="text" autocomplete="nope" maxlength="5" name="Zip" id="Zip" placeholder="Zip Code" class="form-control" @bind-Value="registerModel.ZipCode" onkeypress="return (event.charCode !=8 && event.charCode ==0 || (event.charCode >= 48 && event.charCode <= 57))"></InputText>
+                            @*<ValidationMessage For="@(() => registerModel.ZipCode)" />*@
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="Phone" class="col-sm-2 col-form-label">Cell Number:</label>
+                        <div class="col-sm-10">
+                            <InputText type="text" autocomplete="nope" maxlength="10" name="Phone" id="Phone" placeholder="Cell Number" class="form-control" @bind-Value="registerModel.CellPhone" disabled="true"></InputText>
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="Email" class="col-sm-2 col-form-label"><span class="required">*&nbsp;</span>Email Address:</label>
+                        <div class="col-sm-10">
+                            <InputText type="text" autocomplete="nope" name="Email" id="Email" placeholder="Email Address" class="form-control" @bind-Value="registerModel.EMail"></InputText>
+                            <ValidationMessage For="@(() => registerModel.EMail)" />
+                        </div>
+                    </div>
+                    <div class="mb-3 row">
+                        <label for="Birth" class="col-sm-2 col-form-label">Birth MM/DD:</label>
+                        <div class="col-sm-10">
+                            <InputDate id="txtBirthDate" class="form-control" max=@DateTime.Today.ToString("yyyy'-'MM'-'dd") @bind-Value="registerModel.BirthDate"></InputDate>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 row" style="margin-bottom:2rem !important">
+                        <div class="col-md-12">
+                            <div class="d-flex gap-2 justify-content-center">
+                                <button class="btn btn-default" onclick="@ResetData" type="button">Reset</button>
+                                <button class="btn cls-submit-btn" type="submit">Update</button>
+                            </div>
+                        </div>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </main>
+</div>
+@*<footer class="footer">
+    <p class="cls-footer-common">© 2022 - SUCCESS SYSTEMS, INC. &nbsp;-&nbsp; <a href="/legal/privacy.html" target="_blank">PRIVACY</a> | <a href="/legal/terms.html" target="_blank">TERMS</a></p>
+    </footer>*@
+
+<footer class="footer menu-items">
+    <ul>
+        <li>
+            <a href="/home">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+        </li>
+        <li>
+            <a href="/search">
+                <i class="fas fa-search"></i>
+                <span>Search</span>
+            </a>
+        </li>
+        <li>
+            <a href="/dashboard">
+                <i class="fas fa-tag"></i>
+                <span>Coupons</span>
+            </a>
+        </li>
+    </ul>
+</footer>
+@code {
+
+    [Parameter]
+    public int userId { get; set; }
+    protected string Title = "Add";
+    protected ProfileViewModel registerModel = new();
+    public string appProfileName = "";
+    public string menuIconImage = "";
+    public string headerName = "";
+    protected override async Task OnParametersSetAsync()
+    {
+        await GetProfileData();
+
+    }
+    protected override Task OnInitializedAsync()
+    {
+        GetSession();
+        registerModel = new ProfileViewModel();
+        return base.OnInitializedAsync();
+    }
+    private async Task GetSession()
+    {
+        appProfileName = await sessionStorage.GetItemAsync<string>("appProfileName");
+        if (appProfileName.ToLower() == "e-commerce")
+        {
+            EcommerceApplicationProfile ea = new EcommerceApplicationProfile();
+            menuIconImage = ea.MenuIcon;
+            headerName = "E-Commerce";
+        }
+        if (appProfileName.ToLower() == "its-reward")
+        {
+            ItRewardApplicationProfile ia = new ItRewardApplicationProfile();
+            menuIconImage = ia.MenuIcon;
+            headerName = ia.Title;
+        }
+    }
+    protected async Task UpdateLoyaltyUser()
+    {
+        if (registerModel.UserProfileID != 0)
+        {
+            var result = await Http.PutAsJsonAsync("api/LoyaltyUserProfile", registerModel);
+            if (result.StatusCode.ToString() == "OK")
+            {
+                //NavigationManager.NavigateTo("/dashboard");
+                await JsRuntime.InvokeAsync<string>("alert", "Record updated successfully.");
+            }
+
+        }
+        else
+        {
+            var result = await Http.PostAsJsonAsync("api/LoyaltyUserProfile", registerModel);
+            if (result.StatusCode.ToString() == "OK")
+            {
+
+            }
+            StateHasChanged();
+        }
+        //Cancel();
+    }
+    public void Cancel()
+    {
+        NavigationManager.NavigateTo("/fetchuserdetails");
+    }
+    public async Task GetProfileData()
+    {
+        var cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+        if (cellNumber != "" && cellNumber != null)
+        {
+            registerModel = await Http.GetFromJsonAsync<ProfileViewModel>("api/LoyaltyUserProfile/" + cellNumber);
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/login");
+        }
+    }
+    public void ResetData()
+    {
+        GetProfileData();
+    }
+}

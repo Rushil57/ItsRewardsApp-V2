@@ -1,0 +1,173 @@
+﻿@page "/checkout"
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage;
+@using ItsRewardsApp.Shared.Models;
+@using ItsRewardsApp.Shared.ViewModels
+@inject NavigationManager NavigationManager;
+@inject HttpClient Http
+
+<header class="header">
+    <a href="/">
+        <img src="images/ecommerce.png" class="cls-header-img" alt="" />
+    </a>
+    <h5 style="color:#1f81b2;margin-right: 40px;display:@header">@headerName</h5>
+    <h5 style="color:#1f81b2;margin-right: 45px;font-size: 20px;display:@headerstore"> @headers </h5>
+
+    <a href="/setting">
+        <span class="setting-ic" style=@displySettings><i class="fa fa-cog"></i></span>
+    </a>
+</header>
+<div class="item-container">
+    <div class="conteiner m-1 p-1">
+        <div class="row">
+            <div class="col" style="display: flex;justify-content: center;">
+                <form>
+                    <input type="hidden" name="variant" value="inline">
+                    <input type="hidden" name="amount" value=@TotalPrice>
+                    <input id="hdntoken" type="hidden" value=@TokenValue @onchange="OnTokenValueChanged" />
+                    <div class="formInner">
+                        <div class="from-group m-2">
+                            <input type="text" id="fname" class="form-control payment-field" name="fname" placeholder="Enter First Name" autofocus>
+                        </div>
+                        <div class="form-group m-2">
+                            <input type="text" id="lname" class="form-control payment-field" name="lname" placeholder="Enter Last Name">
+                        </div>
+                        <div class="form-group m-2">
+                            <input type="text" id="email" class="form-control payment-field" name="lname" placeholder="Enter Email">
+                        </div>
+                       
+                        <div class="form-group m-2" style="display:flex; flex-direction:column;">
+                            <button type="submit" id="payButton" @onclick="@(() => callPayemntFunction())" class="btn btn-primary btn-block">
+                                 Pay $@TotalPrice.ToString("F2")
+                            </button>
+                        </div>
+                    </div>
+                    
+                </form>
+                <div id="paymentTokenInfo" ></div>
+
+            </div>
+        </div>
+    </div>
+</div>
+<footer class="footer" style="display:@footer">
+    <p class="cls-footer-common">© 2022 - SUCCESS SYSTEMS, INC. &nbsp;-&nbsp; <a href="/legal/privacy.html" target="_blank">PRIVACY</a> | <a href="/legal/terms.html" target="_blank">TERMS</a></p>
+</footer>
+<footer class="footer menu-items" style="display:@footerSetting">
+    <ul>
+        <li>
+            <a href="/home">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+        </li>
+        <li>
+            <a href="/search">
+                <i class="fas fa-search"></i>
+                <span>Search</span>
+            </a>
+        </li>
+        @*<li>
+            <a href="/dashboard">
+                <i class="fas fa-tag"></i>
+                <span>Coupons</span>
+            </a>
+        </li>*@
+    </ul>
+</footer>
+
+@code {
+    string headers;
+    public string appProfileName = "";
+    private string header = "block";
+    private string headerstore = "none";
+    public string headerName = "";
+    public string menuIconImage = "";
+    public string displySettings = "display:block";
+    private string footer = "none";
+    private string footerSetting = "none";
+    public decimal TotalPrice=0.00M;
+    public static string paymenttoken = "";
+    public string TokenValue = "";
+    public EventCallback<string> TokenValueChanged { get; set; }
+    protected StatusViewModel statusView = new();
+    [Inject]
+    public IJSRuntime JSRuntime { get; set; }
+    private IJSObjectReference _jsModule;
+    private DotNetObjectReference<CheckOut>? objRef;
+    protected override Task OnInitializedAsync()
+    {
+        GetSession();
+        return base.OnInitializedAsync();
+    }
+    private async Task GetSession()
+    {
+        _jsModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./scripts/commonScript.js");
+        await _jsModule.InvokeVoidAsync("loadFunctionForPayment");
+        var cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+        TotalPrice = await sessionStorage.GetItemAsync<decimal>("TotalPrice");
+        if (cellNumber != "" && cellNumber != null)
+        {
+            footerSetting = "block";
+            footer = "none";
+        }
+        else
+        {
+            footer = "block";
+            footerSetting = "none";
+        }
+
+        if (headers != "" && headers != null)
+        {
+            header = "none";
+            headerstore = "block";
+        }
+        else
+        {
+            header = "block";
+            headerstore = "none";
+        }
+        StateHasChanged();
+        //CallScript();
+    }
+    private Task OnTokenValueChanged(ChangeEventArgs e)
+    {
+        TokenValue = e.Value.ToString();
+        AddTokenToDatabase(TokenValue);
+        return TokenValueChanged.InvokeAsync(TokenValue);
+    }
+    private async Task callPayemntFunction()
+    {
+        await _jsModule.InvokeVoidAsync("loadFunctionForPayment");
+    }
+    protected  async Task AddTokenToDatabase(string pay_token) //to add paymentToken to ePreOrder table
+    {
+        try
+        {
+            var cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+            var storeId = await sessionStorage.GetItemAsync<string>("Store_Id");
+            if ((cellNumber == null || cellNumber == "") || (string.IsNullOrEmpty(storeId)))
+            {
+                await JSRuntime.InvokeAsync<string>("alert", "Cellnumber Or StoreId not Found");
+            }
+            else
+            {
+                statusView.storeId = storeId;
+                statusView.cellnumber = cellNumber;
+                statusView.PaymentToken = TokenValue;
+                var response=await Http.PutAsJsonAsync("api/Status", statusView);
+                if (response.StatusCode.ToString() == "OK")
+                {
+                    await JSRuntime.InvokeAsync<string>("alert", "PaymentToken stored successfully.");
+                    NavigationManager.NavigateTo("/ecom-index");
+                }
+                else { 
+                    await JSRuntime.InvokeAsync<string>("alert", "Some Error has accured.");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+}

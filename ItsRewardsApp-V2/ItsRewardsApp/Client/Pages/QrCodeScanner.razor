@@ -1,0 +1,193 @@
+﻿@page "/search"
+@inject HttpClient Http
+@inject IJSRuntime JsRuntime
+@inject NavigationManager NavigationManager
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage
+
+@using System.Linq
+@using System.Net.Http.Headers
+@using Microsoft.Extensions.Logging
+@using ItsRewardsApp.Shared.ViewModels;
+@using ItsRewardsApp.Shared.Models;
+@using BlazorBarcodeScanner.ZXing.JS;
+@using Microsoft.AspNetCore.Components.Web;
+
+<header class="header">
+    <a href="/dashboard">
+        @*<img src="images/itsRewardsLogo.jpg" class="cls-header-img" alt="" />*@
+        <img src=@menuIconImage class="cls-header-img" alt="" />
+    </a>
+    <h5 style="color:#1f81b2;margin-right: 40px;">@headerName</h5>
+    <a href="/setting">
+        <span class="setting-ic"><i class="fa fa-cog"></i></span>
+    </a>
+</header>
+
+@*<div class="row" style="margin-top: 100px;margin-left: 20px;">
+    <div id="reader" class="container register-section col-md-6">
+
+    <img id="imageScanner" src="@imgUrl" height="250" width="250" /> <br /><br /><br />
+    <InputFile OnChange="@OnInputFileChange" multiple />
+    </div>
+    <div class="col-md-6">
+    <video id="video" width="450" height="280" autoplay></video>
+    <div class="container register-section" id="reader" style="margin-top:100px;">
+    <button type="button" class="btn btn-default" @onclick="StartVideo">Start Scanning</button>
+    </div>
+    </div>
+    </div>*@
+
+<div class="container-fluid">
+
+    <div class="row">
+        <div class="col-md-12" style="padding-top:90px;text-align: center;">
+            <BlazorBarcodeScanner.ZXing.JS.BarcodeReader @ref="_reader"
+                                                         StartCameraAutomatically="true"
+                                                         VideoWidth="720"
+                                                         VideoHeight="450"
+                                                         StreamWidth="@StreamWidth"
+                                                         StreamHeight="@StreamHeight"
+                                                         OnBarcodeReceived="LocalReceivedBarcodeText" />
+        </div>
+        <div class="col-md-12 m-2" style="text-align:center;">
+            <span>OR</span>
+        </div>
+         <div class="col-md-12" style="text-align: center;">
+              <button @onclick="() => _reader.StartDecoding()" class="btn btn-primary" >Manual Capture</button>
+          </div>
+     
+    </div>
+
+</div>
+<footer class="footer menu-items">
+    <ul>
+        <li>
+            <a href="/home">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+        </li>
+        <li>
+            <a href="/search">
+                <i class="fas fa-search"></i>
+                <span>Search</span>
+            </a>
+        </li>
+        <li>
+            <a href="/dashboard">
+                <i class="fas fa-tag"></i>
+                <span>Coupons</span>
+            </a>
+        </li>
+    </ul>
+</footer>
+
+
+
+@code {
+    string imgUrl = "./images/No_Image.jpg";
+    private string cellNumber = "";
+    //private IJSObjectReference _jsModule;
+    [Inject]
+    public IJSRuntime JSRuntime { get; set; }
+    private IJSObjectReference _jsModule;
+    public string appProfileName = "";
+    public string menuIconImage = "";
+    public string headerName = "";
+    protected override Task OnInitializedAsync()
+    {
+        GetSession();
+        return base.OnInitializedAsync();
+    }
+
+   
+    private async Task GetSession()
+    {
+        appProfileName = await sessionStorage.GetItemAsync<string>("appProfileName");
+        if (appProfileName.ToLower() == "e-commerce")
+        {
+            EcommerceApplicationProfile ea = new EcommerceApplicationProfile();
+            menuIconImage = ea.MenuIcon;
+            headerName = "E-Commerce";
+        }
+        if (appProfileName.ToLower() == "its-reward")
+        {
+            ItRewardApplicationProfile ia = new ItRewardApplicationProfile();
+            menuIconImage = ia.MenuIcon;
+            headerName = ia.Title;
+        }
+        cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+        if (cellNumber == "" || cellNumber == null)
+        {
+            NavigationManager.NavigateTo("/login");
+        }
+        StateHasChanged();
+    }
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        long maxFileSize = 1024 * 1024 * 15;
+        using var content = new MultipartFormDataContent();
+        try
+        {
+            var file = e.File;
+            var fileContent =
+                    new StreamContent(file.OpenReadStream(maxFileSize));
+
+            fileContent.Headers.ContentType =
+                    new MediaTypeHeaderValue(file.ContentType);
+
+            content.Add(
+            content: fileContent,
+                    name: "\"files\"",
+                    fileName: file.Name);
+        }
+        catch (Exception ex)
+        {
+
+        }
+        var response = await Http.PostAsync("/api/QRCode", content);
+
+        var newUploadResults = await response.Content.ReadFromJsonAsync<UploadResult>();
+        if (newUploadResults != null && newUploadResults.result != "")
+        {
+            var result = await Http.GetStringAsync($"api/QRCode/{cellNumber},{newUploadResults.result}");
+            IBrowserFile imgFile = e.File;
+            var buffers = new byte[imgFile.Size];
+            await imgFile.OpenReadStream().ReadAsync(buffers);
+            string imageType = imgFile.ContentType;
+            imgUrl = $"data:{imageType};base64,{Convert.ToBase64String(buffers)}";
+
+            if (result == "Success")
+            {
+                await JsRuntime.InvokeAsync<string>("alert", "Store mapped successfully.");
+            }
+            else
+            {
+                await JsRuntime.InvokeAsync<string>("alert", "Store mapped already exist.");
+            }
+
+        }
+
+    }
+    private async void LocalReceivedBarcodeText(BarcodeReceivedEventArgs args)
+    {
+        await InvokeAsync(() =>
+        {
+            this.LocalBarcodeText = args.BarcodeText;
+            getQrcode(LocalBarcodeText);
+            StateHasChanged();
+        });
+    }
+    private async void getQrcode(string qrcode)
+    {
+        var CellPhone=cellNumber;
+        var AltriaAccountNumber = qrcode.Split('=')[1];
+        var result = await Http.GetStringAsync($"api/QRCode/{CellPhone},{AltriaAccountNumber}");
+        await JsRuntime.InvokeAsync<string>("alert", result);
+    }
+
+}
+
+
+
+

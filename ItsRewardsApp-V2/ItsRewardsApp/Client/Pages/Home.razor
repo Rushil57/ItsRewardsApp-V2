@@ -1,0 +1,279 @@
+﻿@page "/home"
+@using ItsRewardsApp.Shared.ViewModels
+@using ItsRewardsApp.Shared.Models
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage
+<style>
+    div.show {
+        width: 130px;
+        cursor: pointer;
+    }
+    #spinnerParent{
+    }
+    body {
+        overflow-y:hidden;
+    }
+</style>
+<div class="">
+    <header class="header">
+        <a href="/dashboard">
+            @*<img src="images/itsRewardsLogo.jpg" class="cls-header-img" alt="" />*@
+            <img src=@menuIconImage class="cls-header-img" alt="" />
+        </a>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+
+                    <h5 class="title cls-setting-title">@headerName</h5>
+                    @*<h5 class="title cls-setting-title">ItsReward.com</h5>*@
+                    <a href="/setting">
+                        <span class="setting-ic"><i class="fa fa-cog"></i></span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div class="item-container">
+        <div class="container">
+            <div class="row">
+                @if(storeDetails == null)
+                {
+                    @*<p><em>Loading...</em></p>*@
+                    <div class=" d-flex align-items-center justify-content-center gap-3">
+                        <div class="h5 spinner-border text-primary mt-1" style="width: 3rem; height: 3rem;"></div>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var store in storeDetails)
+                    {
+                        <div class="col-xl-4 col-md-6 list" id="storeId_@store.StoreID">
+                            <div class="row item-block item-swipe">
+                                <div class="col-3 item-thumb">
+                                    @if(store.ImageUrl == null)
+                                    {
+                                        <img src="images/storeImage.png" alt="" class="img-fluid" />
+                                    }
+                                    else
+                                    {
+                                        <img src="data:image/png;base64,@System.Convert.ToBase64String(@store.ImageUrl)" alt="" class="img-fluid"/>
+                                    }
+
+                                </div>
+
+                                <div class="col-9 d-flex flex-column item-content">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <h3 class="title">@store.StoreName</h3>
+                                        <i class="far fa-heart me-2 text-danger clsHearts" id="store_@store.StoreID" style="cursor:pointer;" @onclick="@(() => ChangeHeart(@store.StoreID,@store.StoreName, @store.Tier))"></i>
+                                    </div>
+                                    <p class="card-text">@store.Address1 ,@store.City, @store.State @store.Zip5</p>
+                                    <div class="d-flex justify-content-between">
+                                        <div class="d-flex align-items-center">
+                                            <span class="discount-ic me-1">%</span>
+                                            <span>10% Discounts Offers</span>
+                                        </div>
+                                        <div class="d-flex align-items-center">
+                                            <i class="far fa-star me-2 text-warning"></i>
+                                            <span>5.0</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <div class="item-back" id="deletediv">
+                                @*<button class="action first" type="button" onclick="DeleteStore(@store.StoreID,@store.UserProfileId)">Delete</button>*@
+                                <button id="deletebutton" class="action first btn-delete" type="button" @onclick="@(() => DeleteStore(@store.StoreID,@store.UserProfileId))">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+    <footer class="footer menu-items">
+        <ul>
+            <li>
+                <a href="/home">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+            </li>
+            <li>
+                <a href="/search">
+                    <i class="fas fa-search"></i>
+                    <span>Search</span>
+                </a>
+            </li>
+            <li>
+                @if (appProfileName.ToLower() == "its-reward")
+                {
+                    <a href="/dashboard">
+                        <i class="fas fa-tag"></i>
+                        <span>Coupons</span>
+                    </a>
+                }else{
+                    <a href="/ecom-index">
+                        <i class="fas fa-tag"></i>
+                        <span>Coupons</span>
+                    </a>
+                }
+            </li>
+        </ul>
+    </footer>
+</div>
+
+@code {
+    private string cellNumber = "";
+    private string longitude = "";
+    private string latitude = "";
+    private StoreDetailsViewModel[]? storeDetails;
+    private StoreDetailsViewModel[]? storeImages;
+    public string appProfileName = "";
+    public string menuIconImage = "";
+    public string headerName = "";
+    [Inject]
+    public IJSRuntime JSRuntime { get; set; }
+    private string Time { get; set; }
+    private IJSObjectReference _jsModule;
+    protected override async Task OnParametersSetAsync()
+    {
+
+    }
+    protected override Task OnInitializedAsync()
+    {
+        GetSession();
+        GetStoreDetails();
+        return base.OnInitializedAsync();
+    }
+    private async Task GetSession()
+    {
+        //var reloadNumber = await sessionStorage.GetItemAsync<string>("forceReload");
+        //if (reloadNumber == null || reloadNumber == "")
+        //{
+        //    await sessionStorage.SetItemAsync("forceReload", 1);
+        //    NavigationManager.NavigateTo("/home", forceLoad: true);
+        //    return;
+        //}
+        //else
+        //{
+        //    await sessionStorage.SetItemAsync("forceReload", "");
+        //}
+        _jsModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./scripts/commonScript.js");
+        appProfileName = await sessionStorage.GetItemAsync<string>("appProfileName");
+        if (appProfileName.ToLower() == "e-commerce")
+        {
+            EcommerceApplicationProfile ea = new EcommerceApplicationProfile();
+            menuIconImage = ea.MenuIcon;
+            headerName = "E-Commerce";
+        }
+        if (appProfileName.ToLower() == "its-reward")
+        {
+            ItRewardApplicationProfile ia = new ItRewardApplicationProfile();
+            menuIconImage = ia.MenuIcon;
+            headerName = ia.Title;
+        }
+        cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+        if (cellNumber == "" || cellNumber == null)
+        {
+            NavigationManager.NavigateTo("/login");
+        }
+
+        var storeId = await sessionStorage.GetItemAsync<int>("StoreID");
+        var storeName =  await sessionStorage.GetItemAsync<string>("StoreName");
+        if(storeId != 0 && storeName != null && storeName != "")
+        {
+            await _jsModule.InvokeVoidAsync("alterHeart", storeId);
+        }
+        StateHasChanged();
+    }
+    protected async Task GetStoreDetails()
+    {
+        cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+        longitude = await sessionStorage.GetItemAsync<string>("longitude");
+        latitude = await sessionStorage.GetItemAsync<string>("latitude");
+        storeDetails = await Http.GetFromJsonAsync<StoreDetailsViewModel[]>($"api/Home/{cellNumber},{longitude}, {latitude}");
+        StateHasChanged();
+        if (storeDetails.Length == 0)
+        {
+            await JSRuntime.InvokeAsync<string>("alert", "Please Scan Store QR Code before proceeding to search");
+            NavigationManager.NavigateTo("/search");
+        }
+        else if (storeDetails.Length==1)
+        {
+
+            if (appProfileName.ToLower() == "e-commerce")
+            {
+                await sessionStorage.SetItemAsync("StoreID", storeDetails[0].StoreID);
+                await sessionStorage.SetItemAsync("StoreName", storeDetails[0].StoreName);
+                NavigationManager.NavigateTo("/ecom-index");
+            }
+            if (appProfileName.ToLower() == "its-reward")
+            {
+                var storeIds = storeDetails.Select(x => x.StoreID).ToList().ConvertAll<string>(x => x.ToString()).ToList();
+                var result = string.Join<string>(",", storeIds);
+                storeImages = await Http.GetFromJsonAsync<StoreDetailsViewModel[]>($"api/StoreImage/{result}");
+                for (int i = 0; i < storeDetails.Length; i++)
+                {
+                    storeDetails[i].ImageUrl = storeImages[i].ImageUrl;
+                }
+                await _jsModule.InvokeVoidAsync("swipemoment");
+                StateHasChanged();
+            }
+        }
+        else
+        {
+            var storeIds = storeDetails.Select(x => x.StoreID).ToList().ConvertAll<string>(x => x.ToString()).ToList();
+            var result = string.Join<string>(",", storeIds);
+            storeImages = await Http.GetFromJsonAsync<StoreDetailsViewModel[]>($"api/StoreImage/{result}");
+            for (int i = 0; i < storeDetails.Length; i++)
+            {
+                storeDetails[i].ImageUrl = storeImages[i].ImageUrl;
+            }
+            await _jsModule.InvokeVoidAsync("swipemoment");
+            StateHasChanged();
+        }
+    }
+    public async Task ChangeHeart(int storeId, string storename, string tier)
+    {
+        //await sessionStorage.SetItemAsync("StoreID", storeId);
+        await _jsModule.InvokeVoidAsync("alterHeart", storeId);
+        await sessionStorage.SetItemAsync("StoreName", storename);
+        if(tier == "2" || tier == "3")
+        {
+            if (appProfileName.ToLower() == "e-commerce")
+            {
+                await sessionStorage.SetItemAsync("StoreID", storeId);
+                NavigationManager.NavigateTo("/ecom-index");
+            }
+            if (appProfileName.ToLower() == "its-reward")
+            {
+                await sessionStorage.SetItemAsync("StoreID", storeId);
+                NavigationManager.NavigateTo("/dashboard");
+            }
+        }
+    }
+
+    public async Task DeleteStore(int id, int userProfileId)
+    {
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to Remove?");
+        if (confirmed)
+        {
+            await Http.DeleteAsync($"api/Home/{id},{userProfileId}");
+            await _jsModule.InvokeVoidAsync("RemoveDeleteDiv", "storeId_" + id);
+            await JSRuntime.InvokeAsync<string>("alert", "Record deleted successfully");
+            StateHasChanged();
+
+        }
+    }
+
+    //public async Task DeltailsStore(string storename)
+    //{
+    //    //await sessionStorage.SetItemAsync("storeName", storename);
+    //    await sessionStorage.SetItemAsync("StoreName", storename);
+    //    NavigationManager.NavigateTo("/dashboard");
+    //}
+}

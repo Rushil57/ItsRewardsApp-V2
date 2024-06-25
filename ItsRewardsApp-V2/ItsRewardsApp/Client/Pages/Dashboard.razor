@@ -1,0 +1,514 @@
+﻿@page "/dashboard"
+@using ItsRewardsApp.Shared.Models;
+@using ItsRewardsApp.Shared.ViewModels
+@using Microsoft.AspNetCore.WebUtilities;
+@using Microsoft.Extensions.Primitives;
+@using Newtonsoft.Json;
+@using System.Text
+
+@inject HttpClient Http;
+@inject NavigationManager navManager;
+@inject IJSRuntime JsRuntime
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage;
+@inject NavigationManager navigationManager
+<style>
+    body {
+        /*background-image: url("../images/body-bg.png");*/
+        background-repeat: no-repeat;
+        background-size: cover;
+        background-position: center center;
+    }
+</style>
+<header class="header">
+    <a href="/">
+        <img src=@menuIconImage class="cls-header-img" alt="" />
+    </a>
+    <h5 style="color:#1f81b2;margin-right: 40px;display:@header">@headerName</h5>
+    <h5 style="color:#1f81b2;margin-right: 45px;font-size: 20px;display:@headerstore"> @headers </h5>
+
+    <a href="/setting">
+        <span class="setting-ic" style=@displySettings><i class="fa fa-cog"></i></span>
+    </a>
+</header>
+<div class="container dashboard-div" style="padding-top: 15px;">
+    <main class="register-container home-container">
+        <div class="links" style="display:@signheader">
+            <a style="cursor:pointer" onclick="@ReadCookies">SIGN IN</a>&nbsp;&nbsp;/&nbsp;&nbsp;<a href="/loyaltyUserComponent/add">REGISTER</a><br />
+            <img class="img-fluid" src=@logoImage alt="" width="80%" height="100" />
+       </div>
+        <div class="promotions-list" style=@myStyle>
+            <a href="@marlboro" target="_blank" class="promo-link" style="display:@malborodisplay">
+                <div class="c-div promo-block">MARLBORO COUPONS
+                    <p style="margin-bottom:-12px;margin-top:12px;">Marlboro Coupon(s) Only available once a week for redemption</p>
+                    <p style="margin-bottom:-12px;margin-top:12px;">Coupons will be refresh every Sunday</p>
+                </div>
+            </a>
+            <a href="@landM" target="_blank" class="promo-link" style="display:@lmdisplay">
+                <div class="c-div promo-block">L&M COUPONS
+                    <p style="margin-bottom:-12px;margin-top:12px;">L&M Coupon(s) Only available twice a week for redemption</p>
+                    <p style="margin-bottom:-12px;margin-top:12px;">Coupons will be refresh every Sunday</p>
+                </div>
+            </a>
+            <a href="@copenhagen" target="_blank" class="promo-link" style="display:@copenhagendisplay">
+                <div class="c-div promo-block">COPENHAGEN COUPONS
+                    <p style="margin-bottom:-12px;margin-top:12px;">Copenhagen Coupon(s) Only available once a week for redemption</p>
+                    <p style="margin-bottom:-12px;margin-top:12px;">Coupons will be refresh every Sunday</p>
+                </div>
+            </a>
+            <a href="@skoal" target="_blank" class="promo-link" style="display:@skoaldisplay">
+                <div class="c-div promo-block">SKOAL COUPONS
+                    <p style="margin-bottom:-12px;margin-top:12px;">Skoal Coupon(s) Only available once a week for redemption</p>
+                    <p style="margin-bottom:-12px;margin-top:12px;">Coupons will be refresh every Sunday</p>
+                </div>
+            </a>
+            <a href="@black" target="_blank" class="promo-link" style="display:@blackdisplay">
+                <div class="c-div promo-block">BLACK & MILD COUPONS
+                    <p style="margin-bottom:-12px;margin-top:12px;">Black & Mild Coupon(s) Only available twice a week for redemption</p>
+                    <p style="margin-bottom:-12px;margin-top:12px;">Coupons will be refresh every Sunday</p>
+                </div>
+            </a>
+            <a onclick="@RetailChoiceClick" class="promo-link" style="display:@RetailChoiceCoupon">
+                <div class="c-div promo-block">Retail Choice Cigarette</div>
+            </a>
+            @if (couponsInfo == null)
+            {
+                <div class="vh-100 d-flex align-items-center justify-content-center gap-3">
+                    <div class="h5 spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
+                </div>
+            }
+            else
+            {
+                @foreach (var store in couponsInfo)
+                {
+                    <a class="promo-link">
+                        <div class="c-div promo-block" id=@store.PromotionId @onclick="()=>CouponDetail(store.PromotionId,store.StoreId)">@store.CouponName</div>
+                    </a>
+                }
+            }
+        </div>
+        @if (retailChoiceModal)
+        {
+            <div class="modal fade show d-block" id="retailChoiceModal" tabindex="-1" role="dialog">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content" style="border-radius: 16px;">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="titleLabel">Retail Choice Cigarette</h5>
+                            <button type="button" class="close" @onclick="@CloseRetailChoice" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">×</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <EditForm Model="@registerModel" OnValidSubmit="ConfirmRetailChoice">
+                                <div class="container body-content">
+                                    <div class="col-8">
+                                        <div class="form-check">
+                                            <label class="form-check-label" id="queid"> Please indicate which tobacco products you currently use</label>
+                                        </div>
+                                        <br>
+                                        @foreach (var item in AllPatternNames)
+                                        {
+                                            <input type="checkbox" style="margin-right:10px;" @onchange="args=>CheckBoxOnChange(args, item.AnsValue)" />  @item.AnsText <br>
+                                        }
+                                        <div class="mt-3 row">
+                                            <div class="col-md-12">
+                                                <div class="d-flex gap-2">
+                                                    <button type="submit" class="btn cls-submit-btn" @onclick="@OnSubmit">Submit</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </EditForm>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </main>
+</div>
+<footer class="footer" style="display:@footer">
+    <p class="cls-footer-common">© 2022 - SUCCESS SYSTEMS, INC. &nbsp;-&nbsp; <a href="/legal/privacy.html" target="_blank">PRIVACY</a> | <a href="/legal/terms.html" target="_blank">TERMS</a></p>
+</footer>
+<footer class="footer menu-items" style="display:@footerSetting">
+    <ul>
+        <li>
+            <a href="/home">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+        </li>
+        <li>
+            <a href="/search">
+                <i class="fas fa-search"></i>
+                <span>Search</span>
+            </a>
+        </li>
+        <li>
+            <a href="/dashboard">
+                <i class="fas fa-tag"></i>
+                <span>Coupons</span>
+            </a>
+        </li>
+    </ul>
+</footer>
+@code {
+    [Inject]
+    public IJSRuntime JSRuntime { get; set; }
+    protected StoreTbl registerModel = new();
+    string marlboro = "";
+    string landM = "";
+    string copenhagen = "";
+    string skoal = "";
+    string black = "";
+    string headers;
+    private string malborodisplay = "block";
+    private string lmdisplay = "block";
+    private string blackdisplay = "block";
+    private string skoaldisplay = "block";
+    private string copenhagendisplay = "block";
+    private string header = "block";
+    private string headerstore = "none";
+    private string signheader = "block";
+    private string RetailChoiceCoupon = "none";
+    private string footer = "none";
+    private string footerSetting = "none";
+    public string imageName = "";
+    public string projectAppName = "";
+    public string headerName = "";
+    public List<CouponsViewModel> couponsInfo = new();
+    public bool retailChoiceModal = false;
+    private List<RetailChoiceViewModel> AllPatternNames = new();
+    private StoreRetailChoiceDataViewModel storeRetailChoiceDataViewModel = new();
+    private List<SurveyDataResponseViewModel> surveyDataResponseViewModelList = new();
+    private StoreDetailsViewModel[]? storeDetails;
+    private TobaccoRebate tobaccoRebate = new();
+    List<string> result = new List<string>();
+    public string myCookieValue { get; set; } = "";
+    public string IsLocalUrl = "";
+    public string logoImage = "";
+    public string menuIconImage = "";
+    public string displySettings = "display:block";
+
+    string myStyle;
+    protected override Task OnInitializedAsync()
+    {
+        string CurrUrl = navigationManager.Uri.ToString();
+        if (CurrUrl.Contains("/dashboard?s="))
+        {
+            string toBeSearched = "/dashboard?s=";
+            string altriaAccountNumber = CurrUrl.Substring(CurrUrl.IndexOf(toBeSearched) + toBeSearched.Length);
+            if (altriaAccountNumber != "" && altriaAccountNumber != null)
+            {
+                GetSession();
+                getStoreIdFromAltriaAccountNumber(altriaAccountNumber);
+                GetPageLoadLink();
+                BindCheckBoxList();
+                BindDataStore();
+            }
+        }
+        else
+        { 
+            GetStoreNameByStationID();
+            GetSession();
+            GetPageLoadLink();
+            BindCheckBoxList();
+            BindDataStore();
+        }
+        return base.OnInitializedAsync();
+    }
+    private async Task GetSession()
+    {
+        var cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+        headers = await sessionStorage.GetItemAsync<string>("StoreName");
+        myStyle = "display: none";
+        if (cellNumber != "" && cellNumber != null)
+        {
+            signheader = "none";
+            footerSetting = "block";
+            footer = "none";
+            myStyle = "display:block";
+        }
+        else
+        {
+            footer = "block";
+            footerSetting = "none";
+        }
+
+        if (headers != "" && headers != null)
+        {
+            header = "none";
+            headerstore = "block";
+            myStyle = "display:block";
+        }
+        else
+        {
+            header = "block";
+            headerstore = "none";
+        }
+        projectAppName = await sessionStorage.GetItemAsync<string>("appProfileName");
+        var storeName = await sessionStorage.GetItemAsync<string>("StoreName"); //to display storeName in headers
+        if (projectAppName.ToLower() == "e-commerce")
+        {
+            EcommerceApplicationProfile ea = new EcommerceApplicationProfile();
+            logoImage = ea.Logo;
+            menuIconImage = ea.MenuIcon;
+            headerName = "E-Commerce";
+            headers = "Store" + " " + storeName + " " + "Shopping"; //to display storeName in headers
+        }
+        if (projectAppName.ToLower() == "its-reward")
+        {
+            ItRewardApplicationProfile ia = new ItRewardApplicationProfile();
+            logoImage = ia.Logo;
+            menuIconImage = ia.MenuIcon;
+            headerName = ia.Title;
+            headers = storeName + " " + "Tobbaco Promotions"; //to display storeName in headers
+        }
+        StateHasChanged();
+    }
+    private async Task ReadCookies(){
+        myCookieValue= await JsRuntime.InvokeAsync<string>("ReadCookie.ReadCookie", "");
+        var splitValues = myCookieValue.Split(" ");
+        var cellPhoneValue = splitValues[0].Split("=");
+        if(splitValues.Any(x=>x != ""))
+        {
+            await sessionStorage.SetItemAsync("LoginCellNumber", cellPhoneValue[1]);
+            navManager.NavigateTo("/home");
+        }
+        else
+        {
+            navManager.NavigateTo("/login");
+        }
+    }
+    protected async Task GetPageLoadLink()
+    {
+        var tobaccoPromotion = await Http.GetFromJsonAsync<TobaccoPromotion>("api/Dashboard/");
+        IsLocalUrl = tobaccoPromotion.IsLocal;
+        await sessionStorage.SetItemAsync("LocalUrl", IsLocalUrl);
+        if (tobaccoPromotion?.Marlboro.Name == "Marlboro")
+        {
+            marlboro = tobaccoPromotion.Marlboro.Link;
+        }
+        if (tobaccoPromotion?.LandM.Name == "LandM")
+        {
+            landM = tobaccoPromotion.LandM.Link;
+        }
+        if (tobaccoPromotion?.Copenhagen.Name == "Copenhagen")
+        {
+            copenhagen = tobaccoPromotion.Copenhagen.Link;
+        }
+        if (tobaccoPromotion?.Skoal.Name == "Skoal")
+        {
+            skoal = tobaccoPromotion.Skoal.Link;
+        }
+        if (tobaccoPromotion?.Black.Name == "Black")
+        {
+            black = tobaccoPromotion.Black.Link;
+        }
+        StateHasChanged();
+    }
+    protected async Task GetStoreNameByStationID()
+    {
+        StringValues AltriaAccountNumber;
+        //await sessionStorage.SetItemAsync("AltriaAccountNumber",AltriaAccountNumber);
+        var storeId = await sessionStorage.GetItemAsync<int>("StoreID");
+        //var storeId = 825;
+        var cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+        //var altriaccount = await sessionStorage.GetItemAsync<string>("AltriaAccountNumber");
+        var uri = navManager.ToAbsoluteUri(navManager.Uri);
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("s", out AltriaAccountNumber))
+        {
+            if (cellNumber == "" || cellNumber == null)
+            {
+                navManager.NavigateTo("/login");
+            }
+            if (string.IsNullOrEmpty(AltriaAccountNumber))
+            {
+                return;
+            }
+            storeRetailChoiceDataViewModel = await Http.GetFromJsonAsync<StoreRetailChoiceDataViewModel>($"api/Dashboard/{AltriaAccountNumber},{cellNumber}");
+            storeRetailChoiceDataViewModel.AltriaAccountNumber = AltriaAccountNumber;
+            storeId = (int)storeRetailChoiceDataViewModel.StoreID;
+            if(storeId!=null && storeId!=0)
+            {
+                await sessionStorage.SetItemAsync("StoreID", storeId);
+            }
+
+            if (storeRetailChoiceDataViewModel.Tier == "3")
+            {
+                RetailChoiceCoupon = "block";
+            }
+            await sessionStorage.SetItemAsync("storeName", storeRetailChoiceDataViewModel?.StoreName);
+            await sessionStorage.SetItemAsync("storeId", storeRetailChoiceDataViewModel?.StoreID);
+            StateHasChanged();
+        }
+        if (storeId == 0 && cellNumber != null && cellNumber != "")
+        {
+            await JsRuntime.InvokeAsync<string>("alert", "Please select store or scan qr code to show coupons");
+            navManager.NavigateTo("/home");
+            return;
+        }
+        else
+        {
+            couponsInfo = await Http.GetFromJsonAsync<List<CouponsViewModel>>($"api/Coupons/{cellNumber},{storeId}");
+            StateHasChanged();
+        }
+
+        await sessionStorage.SetItemAsync<string>("StoreName","");
+        await sessionStorage.SetItemAsync<int>("StoreID",0);
+    }
+    public void RetailChoiceClick()
+    {
+        retailChoiceModal = true;
+        StateHasChanged();
+    }
+    public void CloseRetailChoice()
+    {
+        retailChoiceModal = false;
+        StateHasChanged();
+    }
+    public void ConfirmRetailChoice()
+    {
+        retailChoiceModal = false;
+        StateHasChanged();
+    }
+
+
+    async Task CheckBoxOnChange(ChangeEventArgs args, string item)
+    {
+        bool IsSelected = (bool)args.Value;
+        SurveyDataResponseViewModel surveyDataResponseViewModel = new SurveyDataResponseViewModel();
+
+        if (IsSelected)
+        {
+            surveyDataResponseViewModel.ResponseID = item;
+            surveyDataResponseViewModelList.Add(surveyDataResponseViewModel);
+        }
+        else
+        {
+            surveyDataResponseViewModelList.RemoveAll(x => x.ResponseID == item);
+        }
+    }
+
+    protected async Task OnSubmit()
+    {
+        SurveyDataViewModel surveyDataViewModel = new SurveyDataViewModel();
+        surveyDataViewModel.SurveyQuestionID = "176";
+        surveyDataViewModel.SurveyResponseData = surveyDataResponseViewModelList;
+        storeRetailChoiceDataViewModel.SurveyDataArray = surveyDataViewModel;
+        var result = await Http.PostAsJsonAsync("api/Dashboard/", storeRetailChoiceDataViewModel);
+        var storeModel = await result.Content.ReadAsStringAsync();
+        var modelData = JsonConvert.DeserializeObject<StoreRetailChoiceDataViewModel>(storeModel);
+        await JSRuntime.InvokeAsync<string>("alert", modelData.ResponsePhares);
+    }
+
+    public void BindCheckBoxList()
+    {
+        AllPatternNames.Add(new RetailChoiceViewModel { AnsText = "Cigarettes (Marlboro)", AnsValue = "7262" });
+        AllPatternNames.Add(new RetailChoiceViewModel { AnsText = "Cigars (B&M)", AnsValue = "7263" });
+        AllPatternNames.Add(new RetailChoiceViewModel { AnsText = "Dip (Copenhagen)", AnsValue = "7264" });
+        AllPatternNames.Add(new RetailChoiceViewModel { AnsText = "Snus (Skoal)", AnsValue = "7265" });
+        AllPatternNames.Add(new RetailChoiceViewModel { AnsText = "Cigarettes (Marlboro)", AnsValue = "8437" });
+        AllPatternNames.Add(new RetailChoiceViewModel { AnsText = "Oral Nicotine Products (on!)", AnsValue = "7262" });
+    }
+
+    protected async Task BindDataStore()
+    {
+        var storeId = await sessionStorage.GetItemAsync<string>("StoreID");
+        tobaccoRebate = await Http.GetFromJsonAsync<TobaccoRebate>($"api/Dashboard/{storeId}");
+        if (tobaccoRebate.Cigs == "Y" && tobaccoRebate.Smokeless == "Y" && tobaccoRebate.Cigar == "Y")
+        {
+            //skoaldisplay = "block";
+            //copenhagendisplay = "block";
+            //blackdisplay = "block";
+            //malborodisplay = "block";
+            //lmdisplay = "block";
+            GetPageLoadLink();
+        }
+        else if (tobaccoRebate.Cigs == "Y" && tobaccoRebate.Smokeless == "Y")
+        {
+            blackdisplay = "none";
+        }
+        else if (tobaccoRebate.Cigs == "Y" && tobaccoRebate.Cigar == "Y")
+        {
+            skoaldisplay = "none";
+            copenhagendisplay = "none";
+        }
+        else if (tobaccoRebate.Smokeless == "Y" && tobaccoRebate.Cigar == "Y")
+        {
+            malborodisplay = "none";
+            lmdisplay = "none";
+        }
+        else if (tobaccoRebate.Cigs == "Y")
+        {
+            blackdisplay = "none";
+            skoaldisplay = "none";
+            copenhagendisplay = "none";
+        }
+        else if (tobaccoRebate.Smokeless == "Y")
+        {
+            malborodisplay = "none";
+            lmdisplay = "none";
+            blackdisplay = "none";
+        }
+        else if (tobaccoRebate.Cigar == "Y")
+        {
+            malborodisplay = "none";
+            lmdisplay = "none";
+            skoaldisplay = "none";
+            copenhagendisplay = "none";
+        }
+    }
+    protected async Task getStoreIdFromAltriaAccountNumber(String accountNumber)
+    { 
+        var cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+        if (cellNumber == "" || cellNumber == null)
+        {
+            displySettings = "display:none";
+        }
+        cellNumber = "0";
+        storeRetailChoiceDataViewModel = await Http.GetFromJsonAsync<StoreRetailChoiceDataViewModel>($"api/Dashboard/{accountNumber},{cellNumber}");
+        storeRetailChoiceDataViewModel.AltriaAccountNumber = accountNumber;
+        var storeId = storeRetailChoiceDataViewModel.StoreID;
+        headers = storeRetailChoiceDataViewModel.StoreName;
+        if (storeRetailChoiceDataViewModel.Tier == "3")
+        {
+            RetailChoiceCoupon = "block";
+        }
+        if (storeId != 0)
+        {
+            // result = await Http.GetFromJsonAsync<List<string>>($"api/Coupons/{cellNumber},{storeId}");
+            //if (result.Count == 0)
+            //{
+            signheader = "none";
+            myStyle = "display:block"; //if coupens not found display 5 defalut coupens
+                                       //footerSetting = "block";
+            footer = "none";
+            StateHasChanged();
+            //}
+            //else
+            //{
+            //    signheader = "none";
+            //    header = "none";
+            //    headerstore = "block";
+            //    myStyle = "display:block";
+            //    footerSetting = "block";
+            //    footer = "none";
+            //    StateHasChanged();
+            //}
+        }
+        else
+        { 
+            await JsRuntime.InvokeAsync<string>("alert", "Store not found for this AccountNumber");
+        }
+    }
+    private async Task CouponDetail(int promotionId,string storeId)
+    {
+        if (promotionId != null || promotionId != 0)
+        {
+            await sessionStorage.SetItemAsync<string>("Store_Id", storeId);
+            await sessionStorage.SetItemAsync<string>("PromotionId", promotionId.ToString());
+            navManager.NavigateTo("/SearchResult");
+        }
+    }
+   
+}

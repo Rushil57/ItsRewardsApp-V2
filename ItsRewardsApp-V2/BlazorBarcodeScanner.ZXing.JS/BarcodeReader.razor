@@ -1,0 +1,35 @@
+﻿@using Microsoft.JSInterop
+
+<section class="zxing-container">
+   @* @if (!string.IsNullOrWhiteSpace(Title))
+    {
+        <h3 class="zxing-title">@Title</h3>
+    }*@
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="alert alert-danger" role="alert" >
+            @ErrorMessage
+        </div>
+    }
+    <div class="zxing-video-container">
+        <video @ref="_video" width="@VideoWidth" height="@VideoHeight"></video>
+    </div>
+    <canvas @ref="_canvas" style="display:none;"/>
+
+    @if (ShowVideoDeviceList)
+    {
+        @if (_videoInputDevices == null)
+        {
+            <p>looking for devices</p>
+        }
+    }
+
+  @*  @if (ShowResult)
+    {
+        <div class="zxing-result-container">
+            <b>Result:</b>
+            <pre><code class="zxing-result">@BarcodeText</code></pre>
+        </div>
+    }*@
+    
+</section>

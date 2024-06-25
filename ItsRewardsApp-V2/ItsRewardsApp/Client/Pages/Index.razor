@@ -1,0 +1,67 @@
+﻿@page "/"
+@page "/store/{storelink}"
+@inject HttpClient Http;
+@inject IJSRuntime JsRuntime
+@inject NavigationManager navManager;
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage;
+@using ItsRewardsApp.Shared.Models;
+@using ItsRewardsApp.Shared.ViewModels;
+<div id="app">
+    <!--Loading...--> @*spinner till projectAppName value get *@
+    <div class="vh-100 d-flex align-items-center justify-content-center gap-3">
+        <div class="h5 spinner-border text-primary" style="width: 3rem; height: 3rem;"></div>
+    </div>
+</div>
+@*<Dashboard></Dashboard>*@
+@code{
+    [Parameter]
+    public string storelink { get; set; }
+
+    public string projectAppName = "";
+    public UserLoyaltyStoreMappings userLoyaltyStore = new();
+    protected override Task OnInitializedAsync()
+    {
+        GetApplicationContext();
+        return base.OnInitializedAsync();
+    }
+    protected async Task GetApplicationContext()
+    { 
+        var tobaccoPromotion = await Http.GetFromJsonAsync<TobaccoPromotion>("api/Dashboard/");  //call to get Application context from configuration
+        projectAppName = tobaccoPromotion.ProjectApp;
+        await sessionStorage.SetItemAsync("appProfileName", projectAppName);
+        if (projectAppName.ToLower() == "e-commerce")
+        {
+            string CurrUrl = navManager.Uri.ToString();
+            if (CurrUrl.Contains("/store/@"))
+            {
+                string toBeSearched = "/store/@";
+                string storelinkvalue = CurrUrl.Substring(CurrUrl.IndexOf(toBeSearched) + toBeSearched.Length);
+                await sessionStorage.SetItemAsync("storeLink", storelinkvalue);
+                var cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+                if (cellNumber == "" || cellNumber == null)
+                {
+                    navManager.NavigateTo("/dashboard"); 
+                }
+                else 
+                { 
+                    userLoyaltyStore = await Http.GetFromJsonAsync<UserLoyaltyStoreMappings>($"api/Storelink/{cellNumber},{storelinkvalue}");
+                    if (userLoyaltyStore.ID == 0)
+                    {
+                        await JsRuntime.InvokeAsync<string>("alert", "incorrect storelink name or '@' is missing in storeName");
+                    }
+                    else { 
+                        await sessionStorage.SetItemAsync("StoreID", userLoyaltyStore.StoreID);
+                        navManager.NavigateTo("/ecom-index");
+                    }
+                }
+            }
+            else { 
+                navManager.NavigateTo("/login");
+            }
+        }
+        if (projectAppName.ToLower() == "its-reward")
+        {
+            navManager.NavigateTo("/dashboard");
+        }
+    }
+}

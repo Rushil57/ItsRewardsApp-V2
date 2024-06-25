@@ -1,0 +1,569 @@
+﻿@page "/SearchResult"
+@using ItsRewardsApp.Shared.ViewModels
+@using ItsRewardsApp.Shared.Models
+@inject HttpClient Http
+@inject IJSRuntime JsRuntime
+@inject NavigationManager NavigationManager
+@inject Blazored.SessionStorage.ISessionStorageService sessionStorage;
+@implements IDisposable;
+<style>
+    div.show {
+        width: 130px;
+        cursor: pointer;
+    }
+    #spinnerParent {
+    }
+</style>
+    <header class="header">
+        <div class="row">
+            <div class="col-4">
+                <a href="/">
+                    <img src="images/ecommerce.png" class="cls-header-img" alt="" />
+                </a>
+            </div>
+            <div class="col-4">
+                <h5 style="color:#1f81b2;font-size: 20px;display:@headerstore"> @headers </h5>
+            </div>
+            <div class="col-4" style="display: flex;flex-direction: row-reverse;">
+                <div>
+                <lable style="color:#1f81b2;">@totalQuantity</lable>
+                    <i class="fa fa-shopping-cart" aria-hidden="true" @onclick="()=>ShowStatus()" style="color: #1f81b2;font-size: 20px;padding-top: 33px;padding-right: 5px"></i>
+                     <a href="/setting">
+                         <span><i class="fa fa-cog" style="font-size: 20px;margin-inline-start: 17px;margin-inline-end: 10px;"></i></span>
+                     </a>
+                </div>
+            </div>
+        </div>
+    </header>
+    <div class="item-container">
+        <div class="container">
+            <div class="row" style="position:sticky;top: 100px">
+                <div class="col">
+                    <a href="/ecom-index">
+                        <img src="/images/storeImage.png" class="img-fluid" alt="storeImage" style="height:30px;width:30px;margin:3px;" />
+                        <lable style="color: black;font-size: 16px;">@headers</lable>
+                    </a>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-3" style="display:@filterRowDisplay">
+                    <select @onchange="OnValueChanged" class="form-select me-1" style="width: 222px;color:#5c5a5a;font-size:1.25rem;display:@priceSelectionStyle;position:sticky;top:145px;">
+                        <option value="All" class="dropdown-item">Price: All</option>
+                        <option value="Under" class="dropdown-item">Price: Under @minPrice.ToString("F2")</option>
+                        <option value="Over" class="dropdown-item">Price: Over @minPrice.ToString("F2")</option>
+                    </select><br/><br/>
+                    <select @onchange="OnDepartmentValueChanged" class="form-select me-1" style="width: 222px;color:#5c5a5a;font-size:1.25rem;display:@departmentSelectionStyle;position:sticky;top:195px;">
+                        <option value="0">-Select Department-</option>
+                        @foreach(var item in itemDepartments)
+                        {
+                            <option value="@item" class="dropdown-item">@item</option>
+                        }
+                    </select><br /><br />
+                    <select @onchange="OnGroupValueChanged" class="form-select me-1" style="width: 222px;color:#5c5a5a;font-size:1.25rem;display:@groupSelectionStyle;position:sticky;top:230px;">
+                        <option value="0">-Select Group-</option>
+                        @foreach (var item in groupsOfItems)
+                        {
+                            <option value="@item" class="dropdown-item">@item</option>
+                        }
+                    </select><br /><br />
+                </div>
+                <div class=@itemsRowDisplay>
+                    <div class="row">
+                        @if (searchResult == null)
+                        {
+                            <div class=" d-flex align-items-center justify-content-center gap-3">
+                                <div class="h5 spinner-border text-primary mt-1" style="width: 3rem; height: 3rem;"></div>
+                            </div>
+                        }
+                        else
+                        {
+                          <div class="align-items-center gap-3">
+                                <div class="h5 spinner-border text-primary mt-1" style="width: 3rem; height: 3rem;display:@ShowLoder;margin-left: 33%;"></div>
+                          </div>
+                            @foreach (var item in searchResult)
+                            {
+                                <div class="col-xl-4 col-md-6 list">
+                                    <div class="row item-block item-swipe-addcart">
+                                        <div class="col-4" style="padding-left: 0px!important;">
+                                            @if (@item.ImageSrc == null)
+                                            {
+                                                <img src="/images/No_Image.jpg" alt="image not avialable" class="card-img-top" style="height: 91%;width: 120%;">
+                                            }
+                                            else
+                                            {
+                                                <img src="data:image/png;base64,@System.Convert.ToBase64String(item.ImageSrc)" alt="image not avialable" class="card-img-top" style="height: 91%;width: 120%;">
+                                            }
+                                        </div>
+                                        <div class="col-8 d-flex flex-column">
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <h5 class="card-text" title="@item.Price.ToString("F2")">Price: @item.Price.ToString("F2")</h5>
+                                            </div>
+                                            <h5 class="card-text" style="font-size: 15px !important;" title="@item.Description">Description: @item.Description</h5>
+                                            <div class="d-flex justify-content-between">
+                                                <input type="hidden" value=@item.SKU>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="item-back-addtocart" id="swipeaaddtocartdiv">
+                                        <button id=@item.ProductId class="action first btn-addtoacart" type="button" @onclick="@(() =>AddToCart(item.ProductId,item.Description,item.Price,item.Department))">
+                                            Add to Cart
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer class="footer menu-items">
+        <ul>
+            <li>
+                <a href="/home">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+            </li>
+            <li>
+                <a href="/search">
+                    <i class="fas fa-search"></i>
+                    <span>Search</span>
+                </a>
+            </li>
+            <li>
+                @if (appProfileName.ToLower() == "its-reward")
+                {
+                    <a href="/dashboard">
+                        <i class="fas fa-tag"></i>
+                        <span>Coupons</span>
+                    </a>
+                }
+                else
+                {
+                    <a href="/ecom-index">
+                        <i class="fas fa-tag"></i>
+                        <span>Coupons</span>
+                    </a>
+                }
+            </li>
+        </ul>
+    </footer>
+
+@code {
+    string headers;
+    public string storeId = "";
+    private string cellNumber = "";
+    public string menuIconImage = "";
+    public string headerName = "";
+    private string headerstore = "block";
+    public string appProfileName = "";
+    public PreOrderDetail preOrderDetail = new PreOrderDetail();
+    public List<SearchResultViewModel> searchResult = new List<SearchResultViewModel>();
+    public string Value = "all"; //for sorting price
+    public string departmentValue = "0"; //for departmrntvalue
+    public string groupValue = "0";  //for group of serachresult
+    public List<string> itemDepartments=new List<string>();
+    public List<string> groupsOfItems= new List<string>();
+    public string priceSelectionStyle = "none";
+    public Decimal minPrice = 0.00M;
+    public string departmentSelectionStyle = "none"; //for display departmentfilter display style
+    public string groupSelectionStyle = "none"; //for display groupFIlter display style
+    public string itemsRowDisplay = "col-md-9"; //row for searchresult items
+    public string filterRowDisplay = "block"; //row for filter
+    public string ShowLoder = "block";
+    public string promotionId = "";
+    public string displySettings = "display:block;margin-right: 10px;";
+    public int totalQuantity = 0;
+    public EventCallback<string> ValueChanged { get; set; }
+    public EventCallback<string> DepartmentValueChanged { get; set; }
+    public EventCallback<string> GroupValueChanged { get; set; }
+    public List<StatusViewModel> cartItemsList = new();
+    [Inject]
+    public IJSRuntime JSRuntime { get; set; }
+    private string Time { get; set; }
+    private IJSObjectReference _jsModule;
+    protected override async Task OnParametersSetAsync()
+    {
+
+    }
+    protected override Task OnInitializedAsync()
+    {
+        GetSession();
+        GetCartItemsList();
+        return base.OnInitializedAsync();
+    }
+    private async Task GetSession()
+    {
+        _jsModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./scripts/commonScript.js");
+        appProfileName = await sessionStorage.GetItemAsync<string>("appProfileName");
+        if (appProfileName.ToLower() == "e-commerce")
+        {
+            EcommerceApplicationProfile ea = new EcommerceApplicationProfile();
+            menuIconImage = ea.MenuIcon;
+        }
+        if (appProfileName.ToLower() == "its-reward")
+        {
+            ItRewardApplicationProfile ia = new ItRewardApplicationProfile();
+            menuIconImage = ia.MenuIcon;
+            headerName = ia.Title;
+        }
+        cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+        if (cellNumber == "" || cellNumber == null)
+        {
+            NavigationManager.NavigateTo("/login");
+        }
+        headers = await sessionStorage.GetItemAsync<string>("StoreName");
+        if (headers != "" && headers != null)
+        {
+            headerstore = "block";
+        }
+        else
+        {
+            headerstore = "none";
+        }
+        StateHasChanged();
+        var promotionId = await sessionStorage.GetItemAsync<string>("PromotionId");
+        if (promotionId == null || promotionId == "")
+        {
+            GetSearchResultByDescription();
+        }
+        else {
+            GetSearchResultByPromotionId();
+        }
+        StateHasChanged();
+    }
+    protected async Task GetCartItemsList()
+    { 
+        var storeId = await sessionStorage.GetItemAsync<string>("Store_Id");
+        cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+        if ((cellNumber == null || cellNumber == "") || (string.IsNullOrEmpty(storeId)))
+        {
+            await JsRuntime.InvokeAsync<string>("alert", "Cellnumber Or StoreId not Found");
+        }
+        else
+        {
+            cartItemsList = await Http.GetFromJsonAsync<List<StatusViewModel>>($"api/Status/{cellNumber},{storeId}");
+            foreach (var item in cartItemsList)
+            {
+                totalQuantity += item.Quantity;
+            }
+        }
+        StateHasChanged();
+    }
+    protected async Task GetSearchResultByPromotionId()
+    {
+        var storeId = await sessionStorage.GetItemAsync<string>("Store_Id");
+        promotionId = await sessionStorage.GetItemAsync<string>("PromotionId");
+        if (promotionId != null)
+        {
+            searchResult = await Http.GetFromJsonAsync<List<SearchResultViewModel>>($"api/SearchResult/{promotionId},{storeId}");
+            if (searchResult != null)
+            {
+                ShowLoder = "none";
+                var itemPrices = searchResult.Select(p => p.Price).Distinct().ToList();
+                itemDepartments = searchResult.Select(p => p.Department).Distinct().ToList(); //for binding depetment selection options
+                groupsOfItems = searchResult.Select(p=>p.Group).Distinct().ToList();
+                if (itemPrices.Count == 1 && itemDepartments.Count == 1 && groupsOfItems.Count==1)
+                {
+                    itemsRowDisplay = "col-md-12";
+                    filterRowDisplay = "none";
+                }
+                if (itemPrices.Count == 1)
+                {
+                    priceSelectionStyle = "none"; //hide price filter
+                    minPrice = itemPrices[0];
+                }
+                else
+                {
+                    priceSelectionStyle = "block";
+                    minPrice = itemPrices.Min();
+                    minPrice = minPrice + (decimal)0.01;
+                }
+                if (itemDepartments.Count == 1 || itemDepartments.Count==0)
+                {
+                    departmentSelectionStyle = "none";
+                }
+                else 
+                {
+                    departmentSelectionStyle = "block";
+                }
+                if (groupsOfItems.Count>1)
+                {
+                    groupSelectionStyle = "block";
+                }
+            }
+            else
+            { 
+                await JsRuntime.InvokeAsync<string>("alert", "Sorry, No items to display..");
+            }
+            if (Value.ToLower() == "all")
+            {
+                if (departmentValue == "0" && groupValue != "0")
+                {
+                    searchResult = searchResult.Where(a => a.Group == groupValue).ToList();
+
+                }
+                if (departmentValue != "0" && groupValue == "0")
+                {
+                    searchResult = searchResult.Where(a => a.Department == departmentValue).ToList();
+                }
+                if (departmentValue != "0" && groupValue != "0")
+                {
+                    searchResult = searchResult.Where(a => a.Department == departmentValue && a.Group == groupValue).ToList();
+                }
+            }
+            if (Value.ToLower()=="under")
+            {
+                if (departmentValue == "0" && groupValue != "0" )
+                {
+                    searchResult = searchResult.Where(a => a.Price <= minPrice && a.Group == groupValue).ToList();
+
+                }
+                if (departmentValue != "0" && groupValue == "0")
+                { 
+                    searchResult = searchResult.Where(a => a.Price <= minPrice && a.Department == departmentValue).ToList();
+                }
+                if (departmentValue != "0" && groupValue != "0")
+                {
+                    searchResult = searchResult.Where(a => a.Price <= minPrice && a.Department == departmentValue && a.Group == groupValue).ToList();
+                }
+                if(departmentValue=="0" && groupValue=="0")
+                {
+                    searchResult = searchResult.Where(a => a.Price <= minPrice).ToList();
+                }
+            }
+            if (Value.ToLower()=="over")
+            {
+                if (departmentValue == "0" && groupValue != "0")
+                {
+                    searchResult = searchResult.Where(a => a.Price > minPrice && a.Group == groupValue).ToList();
+                }
+                if (departmentValue != "0" && groupValue == "0")
+                {
+                    searchResult = searchResult.Where(a => a.Price > minPrice && a.Department == departmentValue).ToList();
+                }
+                if (departmentValue != "0" && groupValue != "0")
+                {
+                    searchResult = searchResult.Where(a => a.Price > minPrice && a.Department == departmentValue && a.Group == groupValue).ToList();
+                }
+                if (departmentValue == "0" && groupValue =="0")
+                {
+                    searchResult = searchResult.Where(a => a.Price > minPrice).ToList();
+                }
+            }
+        }
+        else
+        {
+            itemsRowDisplay = "col-md-12"; //set itemprices columns to full screen
+            filterRowDisplay = "none";
+        }
+        StateHasChanged();
+        if (appProfileName.ToLower() == "e-commerce")
+        {
+            await _jsModule.InvokeVoidAsync("swipemomentAddCart");
+        }
+
+    }
+    private async Task ShowStatus()
+    {
+        await sessionStorage.SetItemAsync<bool>("CartItemPressed", true);
+        NavigationManager.NavigateTo("/status");
+    }
+    public async Task AddToCart(int id,string des,decimal price,string department)
+    {
+        bool cartItem = cartItemsList.Any(x => x.PriceBookSKUMasterId == id);
+        if (cartItem)
+        {
+            await JSRuntime.InvokeAsync<string>("alert", "Item is already added to the cart");
+        }
+        else
+        {
+            var storeId = await sessionStorage.GetItemAsync<string>("Store_Id");
+            cellNumber = await sessionStorage.GetItemAsync<string>("LoginCellNumber");
+            if (cellNumber != null)
+            {
+                preOrderDetail.CellPhone = cellNumber;
+                preOrderDetail.StoreId = storeId;
+                preOrderDetail.Name = des;
+                preOrderDetail.UnitPrice = price;
+                preOrderDetail.PriceBookSKUMasterId = id;
+                preOrderDetail.Quantity = 1;
+                preOrderDetail.TotalPrice = (preOrderDetail.Quantity * preOrderDetail.UnitPrice);
+                var result = await Http.PostAsJsonAsync("api/SearchResult", preOrderDetail);
+                if (result.StatusCode.ToString() == "OK")
+                {
+                    await JSRuntime.InvokeAsync<string>("alert", "Item Added to the Cart");
+                    GetCartItemsList();
+                }
+                else
+                {
+                    await JSRuntime.InvokeAsync<string>("alert", "Something went wrong");
+                }
+            }
+            else
+            {
+                await JSRuntime.InvokeAsync<string>("alert", "CellNumber is not found");
+            }
+        }
+        StateHasChanged();
+    }
+    protected async Task GetSearchResultByDescription()
+    { 
+        var storeId = await sessionStorage.GetItemAsync<string>("Store_Id");
+        var department = await sessionStorage.GetItemAsync<string>("DepartmentName");
+        var description = await sessionStorage.GetItemAsync<string>("Description");
+        if (description == null || description == "")
+        {
+            itemsRowDisplay = "col-md-12"; //set itemprices columns to full screen
+            filterRowDisplay = "none";
+        }
+        else { 
+            searchResult = await Http.GetFromJsonAsync<List<SearchResultViewModel>>($"api/EcomSearchResult/{storeId},{department},{description}");
+            if (searchResult != null && searchResult.Count > 0)
+            {
+                ShowLoder = "none";
+                var itemPrices = searchResult.Select(p => p.Price).Distinct().ToList();
+                itemDepartments = searchResult.Select(p => p.Department).Distinct().ToList(); //for binding depetment selection options
+                groupsOfItems = searchResult.Select(p => p.Group).Distinct().ToList();
+                if (itemPrices.Count == 1 && itemDepartments.Count == 1 && groupsOfItems.Count == 1)
+                {
+                    itemsRowDisplay = "col-md-12";
+                    filterRowDisplay = "none";
+                }
+                if (itemPrices.Count == 1)
+                {
+                    priceSelectionStyle = "none"; //hide price filter
+                    minPrice = itemPrices[0];
+                }
+                else
+                {
+                    priceSelectionStyle = "block";
+                    minPrice = itemPrices.Min();
+                    minPrice = minPrice + (decimal)0.01;
+                }
+                if (itemDepartments.Count == 1 || itemDepartments.Count == 0)
+                {
+                    departmentSelectionStyle = "none";
+                }
+                else
+                {
+                    departmentSelectionStyle = "block";
+                }
+                if (groupsOfItems.Count > 1)
+                {
+                    groupSelectionStyle = "block";
+                }
+            }
+            else
+            {
+                await JsRuntime.InvokeAsync<string>("alert", "Sorry, No items to display..");
+                NavigationManager.NavigateTo("/home");
+
+            }
+            if (Value.ToLower() == "all")
+            {
+                if (departmentValue == "0" && groupValue != "0")
+                {
+                    searchResult = searchResult.Where(a => a.Group == groupValue).ToList();
+                }
+                if (departmentValue != "0" && groupValue == "0")
+                {
+                    searchResult = searchResult.Where(a => a.Department == departmentValue).ToList();
+                }
+                if (departmentValue != "0" && groupValue != "0")
+                {
+                    searchResult = searchResult.Where(a => a.Department == departmentValue && a.Group == groupValue).ToList();
+                }
+            }
+            if (Value.ToLower() == "under")
+            {
+                if (departmentValue == "0" && groupValue != "0")
+                {
+                    searchResult = searchResult.Where(a => a.Price <= minPrice && a.Group == groupValue).ToList();
+                }
+                if (departmentValue != "0" && groupValue == "0")
+                {
+                    searchResult = searchResult.Where(a => a.Price <= minPrice && a.Department == departmentValue).ToList();
+                }
+                if (departmentValue != "0" && groupValue != "0")
+                {
+                    searchResult = searchResult.Where(a => a.Price <= minPrice && a.Department == departmentValue && a.Group == groupValue).ToList();
+                }
+                if (departmentValue == "0" && groupValue == "0")
+                {
+                    searchResult = searchResult.Where(a => a.Price <= minPrice).ToList();
+                }
+            }
+            if (Value.ToLower() == "over")
+            {
+                if (departmentValue == "0" && groupValue != "0")
+                {
+                    searchResult = searchResult.Where(a => a.Price > minPrice && a.Group == groupValue).ToList();
+                }
+                if (departmentValue != "0" && groupValue == "0")
+                {
+                    searchResult = searchResult.Where(a => a.Price > minPrice && a.Department == departmentValue).ToList();
+                }
+                if (departmentValue != "0" && groupValue != "0")
+                {
+                    searchResult = searchResult.Where(a => a.Price > minPrice && a.Department == departmentValue && a.Group == groupValue).ToList();
+                }
+                if (departmentValue == "0" && groupValue == "0")
+                {
+                    searchResult = searchResult.Where(a => a.Price > minPrice).ToList();
+                }
+            }
+        }
+        StateHasChanged();
+        if (appProfileName.ToLower() == "e-commerce")
+        {
+            await _jsModule.InvokeVoidAsync("swipemomentAddCart");
+        }
+    }
+    private Task OnValueChanged(ChangeEventArgs e)
+    {
+       // ShowLoder = "block";
+        Value = e.Value.ToString();
+
+        if (promotionId == null || promotionId == "")
+        {
+            GetSearchResultByDescription();
+        }
+        else
+        {
+            GetSearchResultByPromotionId();
+        }
+        return ValueChanged.InvokeAsync(Value);
+    }
+    private Task OnDepartmentValueChanged(ChangeEventArgs e)
+    {
+        departmentValue = e.Value.ToString();
+        if (promotionId == null || promotionId == "")
+        {
+            GetSearchResultByDescription();
+        }
+        else
+        {
+            GetSearchResultByPromotionId();
+        }
+        return DepartmentValueChanged.InvokeAsync(departmentValue);
+    }
+    private Task OnGroupValueChanged(ChangeEventArgs e)
+    {
+        groupValue = e.Value.ToString();
+        if (promotionId == null || promotionId == "")
+        {
+            GetSearchResultByDescription();
+        }
+        else
+        {
+            GetSearchResultByPromotionId();
+        }
+        return GroupValueChanged.InvokeAsync(groupValue);
+    }
+    void IDisposable.Dispose()
+    {
+         sessionStorage.SetItemAsync<string>("PromotionId", ""); //set promotionId to 0 so that could not conflict between by search by promotionId or Description
+    }
+}
